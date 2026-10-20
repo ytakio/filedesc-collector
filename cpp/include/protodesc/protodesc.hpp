@@ -4,33 +4,23 @@
 #include <google/protobuf/descriptor.pb.h>
 
 #include <stdexcept>
-#include <string>
+#include <string_view>
 #include <unordered_set>
 #include <vector>
 
 namespace protodesc {
 
-namespace detail {
-
-// Helper to convert a file name to std::string regardless of whether Protobuf
-// returns std::string or absl::string_view.
-template <typename T>
-inline std::string ToString(T&& value) {
-  return std::string(std::forward<T>(value));
-}
-
-}  // namespace detail
-
 // Collects FileDescriptorProto messages including transitive dependencies.
 // This class is header-only so it can be used without compiling a separate
 // library.
 class FileDescriptorSetCollector {
- public:
+public:
   FileDescriptorSetCollector() = default;
 
-  // Return FileDescriptorProtos for the file containing ``descriptor`` and its deps.
-  std::vector<google::protobuf::FileDescriptorProto> CollectForMessage(
-      const google::protobuf::Descriptor* descriptor) {
+  // Return FileDescriptorProtos for the file containing ``descriptor`` and its
+  // deps.
+  [[nodiscard]] std::vector<google::protobuf::FileDescriptorProto>
+  CollectForMessage(const google::protobuf::Descriptor *descriptor) {
     if (descriptor == nullptr) {
       throw std::invalid_argument("descriptor must not be null");
     }
@@ -38,8 +28,9 @@ class FileDescriptorSetCollector {
   }
 
   // Return FileDescriptorProtos for ``file_descriptor`` and its deps.
-  std::vector<google::protobuf::FileDescriptorProto> CollectForDescriptor(
-      const google::protobuf::FileDescriptor* file_descriptor) {
+  [[nodiscard]] std::vector<google::protobuf::FileDescriptorProto>
+  CollectForDescriptor(
+      const google::protobuf::FileDescriptor *file_descriptor) {
     if (file_descriptor == nullptr) {
       throw std::invalid_argument("file_descriptor must not be null");
     }
@@ -48,18 +39,17 @@ class FileDescriptorSetCollector {
     return result;
   }
 
- private:
-  void CollectFile(const google::protobuf::FileDescriptor* file_descriptor,
-                   std::vector<google::protobuf::FileDescriptorProto>& result) {
+private:
+  void CollectFile(const google::protobuf::FileDescriptor *file_descriptor,
+                   std::vector<google::protobuf::FileDescriptorProto> &result) {
     if (file_descriptor == nullptr) {
       return;
     }
 
-    const std::string name = detail::ToString(file_descriptor->name());
-    if (seen_.find(name) != seen_.end()) {
+    const std::string_view name = file_descriptor->name();
+    if (!seen_.insert(name).second) {
       return;
     }
-    seen_.insert(name);
 
     // Recursively collect dependencies first.
     for (int i = 0; i < file_descriptor->dependency_count(); ++i) {
@@ -78,20 +68,21 @@ class FileDescriptorSetCollector {
     result.push_back(std::move(proto));
   }
 
-  std::unordered_set<std::string> seen_;
+  // FileDescriptor names are owned by the protobuf descriptor pool, which has
+  // program lifetime, so string_view keys are safe.
+  std::unordered_set<std::string_view> seen_;
 };
 
 // Convenience function to collect FileDescriptorProtos for a message type.
-inline std::vector<google::protobuf::FileDescriptorProto> CollectForMessage(
-    const google::protobuf::Descriptor* descriptor) {
+inline std::vector<google::protobuf::FileDescriptorProto>
+CollectForMessage(const google::protobuf::Descriptor *descriptor) {
   return FileDescriptorSetCollector().CollectForMessage(descriptor);
 }
 
 // Convenience function to collect FileDescriptorProtos for a file descriptor.
-inline std::vector<google::protobuf::FileDescriptorProto> CollectForDescriptor(
-    const google::protobuf::FileDescriptor* file_descriptor) {
+inline std::vector<google::protobuf::FileDescriptorProto>
+CollectForDescriptor(const google::protobuf::FileDescriptor *file_descriptor) {
   return FileDescriptorSetCollector().CollectForDescriptor(file_descriptor);
 }
 
-}  // namespace protodesc
-
+} // namespace protodesc

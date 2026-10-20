@@ -7,17 +7,18 @@
 #include "protodesc/protodesc.hpp"
 
 using google::protobuf::Descriptor;
+using google::protobuf::Duration;
 using google::protobuf::FileDescriptor;
 using google::protobuf::FileDescriptorProto;
 using google::protobuf::FileDescriptorSet;
 using google::protobuf::Timestamp;
-using google::protobuf::Duration;
 
 namespace protodesc {
 
-static std::vector<std::string> FileNames(const std::vector<FileDescriptorProto>& protos) {
+static std::vector<std::string>
+FileNames(const std::vector<FileDescriptorProto> &protos) {
   std::vector<std::string> names;
-  for (const auto& p : protos) {
+  for (const auto &p : protos) {
     names.push_back(p.name());
   }
   return names;
@@ -33,8 +34,8 @@ TEST(FileDescriptorSetCollector, CollectForMessage) {
 TEST(FileDescriptorSetCollector, CollectForMessageWithDependency) {
   auto protos = CollectForMessage(Duration::descriptor());
   auto names = FileNames(protos);
-  EXPECT_TRUE(std::find(names.begin(), names.end(), "google/protobuf/duration.proto") !=
-              names.end());
+  EXPECT_TRUE(std::find(names.begin(), names.end(),
+                        "google/protobuf/duration.proto") != names.end());
 }
 
 TEST(FileDescriptorSetCollector, CollectForDescriptor) {
@@ -54,13 +55,14 @@ TEST(FileDescriptorSetCollector, DoesNotDuplicate) {
 }
 
 TEST(FileDescriptorSetCollector, RejectsNullMessage) {
-  EXPECT_THROW(CollectForMessage(static_cast<const Descriptor*>(nullptr)), std::invalid_argument);
-}
-
-TEST(FileDescriptorSetCollector, RejectsNullDescriptor) {
-  EXPECT_THROW(CollectForDescriptor(static_cast<const FileDescriptor*>(nullptr)),
+  EXPECT_THROW(CollectForMessage(static_cast<const Descriptor *>(nullptr)),
                std::invalid_argument);
 }
 
-}  // namespace protodesc
+TEST(FileDescriptorSetCollector, RejectsNullDescriptor) {
+  EXPECT_THROW(
+      CollectForDescriptor(static_cast<const FileDescriptor *>(nullptr)),
+      std::invalid_argument);
+}
 
+} // namespace protodesc
