@@ -15,9 +15,10 @@ using google::protobuf::Timestamp;
 
 namespace filedesc {
 
-static std::vector<std::string>
-FileNames(const std::vector<FileDescriptorProto> &protos) {
-  std::vector<std::string> names;
+static auto FileNames(const std::vector<FileDescriptorProto> &protos)
+    -> std::vector<std::string> {
+  auto names = std::vector<std::string>{};
+  names.reserve(protos.size());
   for (const auto &p : protos) {
     names.push_back(p.name());
   }
@@ -25,44 +26,55 @@ FileNames(const std::vector<FileDescriptorProto> &protos) {
 }
 
 TEST(FileDescriptorSetCollector, CollectForMessage) {
-  auto protos = CollectForMessage(Timestamp::descriptor());
-  EXPECT_FALSE(protos.empty());
-  auto names = FileNames(protos);
-  EXPECT_EQ(names.back(), "google/protobuf/timestamp.proto");
+  auto collector = FileDescriptorSetCollector{};
+  auto protos = collector.CollectForMessage(Timestamp::descriptor());
+  ASSERT_TRUE(protos.has_value());
+  EXPECT_FALSE(protos->empty());
+  EXPECT_EQ(FileNames(*protos).back(), "google/protobuf/timestamp.proto");
 }
 
 TEST(FileDescriptorSetCollector, CollectForMessageWithDependency) {
-  auto protos = CollectForMessage(Duration::descriptor());
-  auto names = FileNames(protos);
+  auto collector = FileDescriptorSetCollector{};
+  auto protos = collector.CollectForMessage(Duration::descriptor());
+  ASSERT_TRUE(protos.has_value());
+  auto names = FileNames(*protos);
   EXPECT_TRUE(std::find(names.begin(), names.end(),
                         "google/protobuf/duration.proto") != names.end());
 }
 
 TEST(FileDescriptorSetCollector, CollectForDescriptor) {
-  auto protos = CollectForDescriptor(FileDescriptorSet::descriptor()->file());
-  EXPECT_FALSE(protos.empty());
+  auto collector = FileDescriptorSetCollector{};
+  auto protos =
+      collector.CollectForDescriptor(FileDescriptorSet::descriptor()->file());
+  ASSERT_TRUE(protos.has_value());
+  EXPECT_FALSE(protos->empty());
 }
 
 TEST(FileDescriptorSetCollector, DoesNotDuplicate) {
-  FileDescriptorSetCollector collector;
+  auto collector = FileDescriptorSetCollector{};
   auto first = collector.CollectForMessage(Timestamp::descriptor());
-  ASSERT_EQ(first.size(), 1);
-  EXPECT_EQ(first[0].name(), "google/protobuf/timestamp.proto");
+  ASSERT_TRUE(first.has_value());
+  ASSERT_EQ(first->size(), 1);
+  EXPECT_EQ(first->front().name(), "google/protobuf/timestamp.proto");
 
   auto second = collector.CollectForMessage(Duration::descriptor());
-  ASSERT_EQ(second.size(), 1);
-  EXPECT_EQ(second[0].name(), "google/protobuf/duration.proto");
+  ASSERT_TRUE(second.has_value());
+  ASSERT_EQ(second->size(), 1);
+  EXPECT_EQ(second->front().name(), "google/protobuf/duration.proto");
 }
 
 TEST(FileDescriptorSetCollector, RejectsNullMessage) {
-  EXPECT_THROW(CollectForMessage(static_cast<const Descriptor *>(nullptr)),
-               std::invalid_argument);
+  auto collector = FileDescriptorSetCollector{};
+  auto protos =
+      collector.CollectForMessage(static_cast<const Descriptor *>(nullptr));
+  EXPECT_FALSE(protos.has_value());
 }
 
 TEST(FileDescriptorSetCollector, RejectsNullDescriptor) {
-  EXPECT_THROW(
-      CollectForDescriptor(static_cast<const FileDescriptor *>(nullptr)),
-      std::invalid_argument);
+  auto collector = FileDescriptorSetCollector{};
+  auto protos = collector.CollectForDescriptor(
+      static_cast<const FileDescriptor *>(nullptr));
+  EXPECT_FALSE(protos.has_value());
 }
 
 } // namespace filedesc

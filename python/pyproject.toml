@@ -12,6 +12,9 @@ dev = [
     "pytest>=8.0",
 ]
 
+[tool.setuptools]
+packages = ["filedesc"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

@@ -3,7 +3,7 @@
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor.pb.h>
 
-#include <stdexcept>
+#include <optional>
 #include <string_view>
 #include <unordered_set>
 #include <vector>
@@ -13,76 +13,84 @@ namespace filedesc {
 // Collects FileDescriptorProto messages including transitive dependencies.
 // This class is header-only so it can be used without compiling a separate
 // library.
-class FileDescriptorSetCollector {
+class FileDescriptorSetCollector final {
 public:
+  using Proto = google::protobuf::FileDescriptorProto;
+  using Protos = std::vector<Proto>;
+  using OptionalProtos = std::optional<Protos>;
+
   FileDescriptorSetCollector() = default;
 
+  // This class is stateless; copying or moving it is meaningless.
+  FileDescriptorSetCollector(const FileDescriptorSetCollector &) = delete;
+  FileDescriptorSetCollector &
+  operator=(const FileDescriptorSetCollector &) = delete;
+  FileDescriptorSetCollector(FileDescriptorSetCollector &&) = delete;
+  FileDescriptorSetCollector &operator=(FileDescriptorSetCollector &&) = delete;
+
   // Return FileDescriptorProtos for the file containing ``descriptor`` and its
-  // deps.
-  [[nodiscard]] std::vector<google::protobuf::FileDescriptorProto>
-  CollectForMessage(const google::protobuf::Descriptor *descriptor) {
-    if (descriptor == nullptr) {
-      throw std::invalid_argument("descriptor must not be null");
+  // deps. Returns std::nullopt if ``descriptor`` is null.
+  [[nodiscard]]
+  auto CollectForMessage(const google::protobuf::Descriptor *descriptor) const
+      -> OptionalProtos {
+
+    if (!descriptor) {
+      return std::nullopt;
     }
+
     return CollectForDescriptor(descriptor->file());
   }
 
   // Return FileDescriptorProtos for ``file_descriptor`` and its deps.
-  [[nodiscard]] std::vector<google::protobuf::FileDescriptorProto>
-  CollectForDescriptor(
-      const google::protobuf::FileDescriptor *file_descriptor) {
-    if (file_descriptor == nullptr) {
-      throw std::invalid_argument("file_descriptor must not be null");
+  // Returns std::nullopt if ``file_descriptor`` is null.
+  [[nodiscard]]
+  auto CollectForDescriptor(
+      const google::protobuf::FileDescriptor *file_descriptor) const
+      -> OptionalProtos {
+
+    if (!file_descriptor) {
+      return std::nullopt;
     }
-    std::vector<google::protobuf::FileDescriptorProto> result;
-    CollectFile(file_descriptor, result);
-    return result;
+
+    // FileDescriptor names are owned by the protobuf descriptor pool, which has
+    // program lifetime, so string_view keys are safe.
+    std::unordered_set<std::string_view> seen;
+
+    auto collectFile =
+        [&seen](const auto &self,
+                const google::protobuf::FileDescriptor *fd) -> OptionalProtos {
+      if (!fd) {
+        return std::nullopt;
+      }
+
+      // Detect cycles and insert the file name in a single hash lookup.
+      // emplace() constructs the string_view in place, avoiding a temporary.
+      const bool inserted = seen.emplace(fd->name()).second;
+      if (!inserted) {
+        return Protos{};
+      }
+
+      // Recursively collect dependencies first so the result is topologically
+      // ordered.
+      Protos result;
+      for (int i = 0; i < fd->dependency_count(); ++i) {
+        auto deps = self(self, fd->dependency(i));
+        if (!deps.has_value()) {
+          return std::nullopt;
+        }
+        result.insert(result.end(), deps->begin(), deps->end());
+      }
+
+      // Append this file's descriptor proto.
+      Proto proto;
+      fd->CopyTo(&proto);
+      result.push_back(std::move(proto));
+
+      return result;
+    };
+
+    return collectFile(collectFile, file_descriptor);
   }
-
-private:
-  void CollectFile(const google::protobuf::FileDescriptor *file_descriptor,
-                   std::vector<google::protobuf::FileDescriptorProto> &result) {
-    if (file_descriptor == nullptr) {
-      return;
-    }
-
-    const std::string_view name = file_descriptor->name();
-    if (!seen_.insert(name).second) {
-      return;
-    }
-
-    // Recursively collect dependencies first.
-    for (int i = 0; i < file_descriptor->dependency_count(); ++i) {
-      CollectFile(file_descriptor->dependency(i), result);
-    }
-    for (int i = 0; i < file_descriptor->public_dependency_count(); ++i) {
-      CollectFile(file_descriptor->public_dependency(i), result);
-    }
-    for (int i = 0; i < file_descriptor->weak_dependency_count(); ++i) {
-      CollectFile(file_descriptor->weak_dependency(i), result);
-    }
-
-    // Append this file's descriptor proto.
-    google::protobuf::FileDescriptorProto proto;
-    file_descriptor->CopyTo(&proto);
-    result.push_back(std::move(proto));
-  }
-
-  // FileDescriptor names are owned by the protobuf descriptor pool, which has
-  // program lifetime, so string_view keys are safe.
-  std::unordered_set<std::string_view> seen_;
 };
-
-// Convenience function to collect FileDescriptorProtos for a message type.
-inline std::vector<google::protobuf::FileDescriptorProto>
-CollectForMessage(const google::protobuf::Descriptor *descriptor) {
-  return FileDescriptorSetCollector().CollectForMessage(descriptor);
-}
-
-// Convenience function to collect FileDescriptorProtos for a file descriptor.
-inline std::vector<google::protobuf::FileDescriptorProto>
-CollectForDescriptor(const google::protobuf::FileDescriptor *file_descriptor) {
-  return FileDescriptorSetCollector().CollectForDescriptor(file_descriptor);
-}
 
 } // namespace filedesc

@@ -27,7 +27,8 @@ import (
 )
 
 func main() {
-    protos, err := filedesc.CollectForMessage((*timestamppb.Timestamp)(nil).ProtoReflect())
+    collector := filedesc.NewCollector()
+    protos, err := collector.CollectForMessage((*timestamppb.Timestamp)(nil).ProtoReflect())
     if err != nil {
         // handle error
     }
@@ -51,9 +52,10 @@ Import name: `filedesc`
 
 ```python
 from google.protobuf.timestamp_pb2 import Timestamp
-from filedesc import collect_for_message
+from filedesc import FileDescriptorSetCollector
 
-protos = collect_for_message(Timestamp.DESCRIPTOR)
+coll = FileDescriptorSetCollector()
+protos = coll.collect_for_message(Timestamp.DESCRIPTOR)
 for p in protos:
     print(p.name)
 ```
@@ -74,8 +76,12 @@ Header-only library. Include path: `filedesc/filedesc.hpp`
 #include <google/protobuf/timestamp.pb.h>
 #include "filedesc/filedesc.hpp"
 
-auto protos = filedesc::CollectForMessage(google::protobuf::Timestamp::descriptor());
-for (const auto& p : protos) {
+filedesc::FileDescriptorSetCollector collector;
+auto protos = collector.CollectForMessage(google::protobuf::Timestamp::descriptor());
+if (!protos.has_value()) {
+    // handle error
+}
+for (const auto& p : protos.value()) {
     std::cout << p.name() << "\n";
 }
 ```

@@ -55,8 +55,12 @@ ctest --output-on-failure
 #include <google/protobuf/timestamp.pb.h>
 #include "filedesc/filedesc.hpp"
 
-auto protos = filedesc::CollectForMessage(google::protobuf::Timestamp::descriptor());
-for (const auto& p : protos) {
+filedesc::FileDescriptorSetCollector collector;
+auto protos = collector.CollectForMessage(google::protobuf::Timestamp::descriptor());
+if (!protos.has_value()) {
+    // handle error
+}
+for (const auto& p : protos.value()) {
     std::cout << p.name() << "\n";
 }
 ```

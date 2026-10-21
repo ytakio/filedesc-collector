@@ -26,8 +26,36 @@ func (c *FileDescriptorSetCollector) CollectForDescriptor(fd protoreflect.FileDe
 	if fd == nil {
 		return nil, errors.New("protoreflect.FileDescriptor must not be nil")
 	}
-	state := &collectState{seen: make(map[string]struct{})}
-	return state.collectFile(fd)
+
+	seen := make(map[string]struct{})
+
+	var collectFile func(protoreflect.FileDescriptor) ([]*descriptorpb.FileDescriptorProto, error)
+	collectFile = func(fd protoreflect.FileDescriptor) ([]*descriptorpb.FileDescriptorProto, error) {
+		if fd == nil {
+			return nil, errors.New("file descriptor is nil")
+		}
+
+		path := fd.Path()
+		if _, ok := seen[path]; ok {
+			return nil, nil
+		}
+		seen[path] = struct{}{}
+
+		// Recursively collect dependencies first so the result is topologically ordered.
+		var result []*descriptorpb.FileDescriptorProto
+		deps := fd.Imports()
+		for i := range deps.Len() {
+			depProtos, err := collectFile(deps.Get(i))
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, depProtos...)
+		}
+
+		return append(result, protodesc.ToFileDescriptorProto(fd)), nil
+	}
+
+	return collectFile(fd)
 }
 
 // CollectForMessage is a convenience method that returns FileDescriptorProtos for the
@@ -37,50 +65,4 @@ func (c *FileDescriptorSetCollector) CollectForMessage(msg protoreflect.Message)
 		return nil, errors.New("protoreflect.Message must not be nil")
 	}
 	return c.CollectForDescriptor(msg.Descriptor().ParentFile())
-}
-
-// collectState holds the mutable state for a single collection.
-type collectState struct {
-	seen map[string]struct{}
-}
-
-// collectFile recursively collects the given file descriptor and its transitive
-// dependencies. Each file is emitted only once, and dependencies are emitted before
-// the file that imports them.
-func (s *collectState) collectFile(fd protoreflect.FileDescriptor) ([]*descriptorpb.FileDescriptorProto, error) {
-	if fd == nil {
-		return nil, errors.New("file descriptor is nil")
-	}
-
-	path := fd.Path()
-	if _, ok := s.seen[path]; ok {
-		return nil, nil
-	}
-	s.seen[path] = struct{}{}
-
-	// Recursively collect dependencies first so the result is topologically ordered.
-	var result []*descriptorpb.FileDescriptorProto
-	deps := fd.Imports()
-	for i := range deps.Len() {
-		depProtos, err := s.collectFile(deps.Get(i))
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, depProtos...)
-	}
-
-	result = append(result, protodesc.ToFileDescriptorProto(fd))
-	return result, nil
-}
-
-// CollectForMessage is a convenience function that creates a new collector and
-// returns FileDescriptorProtos for the given message type.
-func CollectForMessage(msg protoreflect.Message) ([]*descriptorpb.FileDescriptorProto, error) {
-	return NewCollector().CollectForMessage(msg)
-}
-
-// CollectForDescriptor is a convenience function that creates a new collector and
-// returns FileDescriptorProtos for the given file descriptor.
-func CollectForDescriptor(fd protoreflect.FileDescriptor) ([]*descriptorpb.FileDescriptorProto, error) {
-	return NewCollector().CollectForDescriptor(fd)
 }
