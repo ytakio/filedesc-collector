@@ -8,7 +8,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace protodesc {
+namespace filedesc {
 
 // Collects FileDescriptorProto messages including transitive dependencies.
 // This class is header-only so it can be used without compiling a separate
@@ -85,4 +85,4 @@ CollectForDescriptor(const google::protobuf::FileDescriptor *file_descriptor) {
   return FileDescriptorSetCollector().CollectForDescriptor(file_descriptor);
 }
 
-} // namespace protodesc
+} // namespace filedesc

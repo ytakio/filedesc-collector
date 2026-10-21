@@ -4,7 +4,7 @@
 #include <google/protobuf/duration.pb.h>
 #include <google/protobuf/timestamp.pb.h>
 
-#include "protodesc/protodesc.hpp"
+#include "filedesc/filedesc.hpp"
 
 using google::protobuf::Descriptor;
 using google::protobuf::Duration;
@@ -13,7 +13,7 @@ using google::protobuf::FileDescriptorProto;
 using google::protobuf::FileDescriptorSet;
 using google::protobuf::Timestamp;
 
-namespace protodesc {
+namespace filedesc {
 
 static std::vector<std::string>
 FileNames(const std::vector<FileDescriptorProto> &protos) {
@@ -65,4 +65,4 @@ TEST(FileDescriptorSetCollector, RejectsNullDescriptor) {
       std::invalid_argument);
 }
 
-} // namespace protodesc
+} // namespace filedesc

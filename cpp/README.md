@@ -1,4 +1,4 @@
-# C++ protodesc
+# C++ filedesc
 
 Header-only library.
 
@@ -19,7 +19,7 @@ brew install protobuf googletest
 ## Build
 
 Because this is a header-only library, there is no library binary to build. The
-CMake target `protodesc` is an `INTERFACE` library that only adds the include
+CMake target `filedesc` is an `INTERFACE` library that only adds the include
 directory and links `protobuf::libprotobuf`.
 
 ```bash
@@ -32,8 +32,8 @@ make -j4
 To use it in your own CMake project:
 
 ```cmake
-add_subdirectory(protodesc)
-target_link_libraries(your_target PRIVATE protodesc)
+add_subdirectory(filedesc)
+target_link_libraries(your_target PRIVATE filedesc)
 ```
 
 To disable tests:
@@ -53,9 +53,9 @@ ctest --output-on-failure
 
 ```cpp
 #include <google/protobuf/timestamp.pb.h>
-#include "protodesc/protodesc.hpp"
+#include "filedesc/filedesc.hpp"
 
-auto protos = protodesc::CollectForMessage(google::protobuf::Timestamp::descriptor());
+auto protos = filedesc::CollectForMessage(google::protobuf::Timestamp::descriptor());
 for (const auto& p : protos) {
     std::cout << p.name() << "\n";
 }

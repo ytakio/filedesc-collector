@@ -1,9 +1,13 @@
-import pytest
 from google.protobuf.descriptor_pb2 import FileDescriptorProto, FileDescriptorSet
 from google.protobuf.duration_pb2 import Duration
 from google.protobuf.timestamp_pb2 import Timestamp
+import pytest
 
-from protodesc import FileDescriptorSetCollector, collect_for_descriptor, collect_for_message
+from filedesc import (
+    FileDescriptorSetCollector,
+    collect_for_descriptor,
+    collect_for_message,
+)
 
 
 def _file_names(protos: list[FileDescriptorProto]) -> list[str]:

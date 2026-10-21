@@ -1,9 +1,9 @@
-# protodesc
+# filedesc-collector
 
 Libraries that collect `FileDescriptorProto` messages for a given protobuf type,
 including all transitive file dependencies.
 
-Repository: `github.com/ytakio/protodesc`
+Repository: `github.com/ytakio/filedesc-collector`
 
 ## Spec
 
@@ -15,19 +15,19 @@ Repository: `github.com/ytakio/protodesc`
 
 ## Go
 
-Module path: `github.com/ytakio/protodesc`
-Package path: `github.com/ytakio/protodesc/go/protodesc`
+Module path: `github.com/ytakio/filedesc-collector`
+Package path: `github.com/ytakio/filedesc-collector/go/filedesc`
 
 ```go
 import (
     "fmt"
 
-    "github.com/ytakio/protodesc/go/protodesc"
+    "github.com/ytakio/filedesc-collector/go/filedesc"
     "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func main() {
-    protos, err := protodesc.CollectForMessage((*timestamppb.Timestamp)(nil).ProtoReflect())
+    protos, err := filedesc.CollectForMessage((*timestamppb.Timestamp)(nil).ProtoReflect())
     if err != nil {
         // handle error
     }
@@ -40,17 +40,18 @@ func main() {
 Run tests:
 
 ```bash
-cd go/protodesc
+cd go/filedesc
 go test ./...
 ```
 
 ## Python
 
-Package name: `protodesc`
+Package name: `filedesc-collector`
+Import name: `filedesc`
 
 ```python
 from google.protobuf.timestamp_pb2 import Timestamp
-from protodesc import collect_for_message
+from filedesc import collect_for_message
 
 protos = collect_for_message(Timestamp.DESCRIPTOR)
 for p in protos:
@@ -67,13 +68,13 @@ pytest
 
 ## C++
 
-Header-only library. Include path: `protodesc/protodesc.hpp`
+Header-only library. Include path: `filedesc/filedesc.hpp`
 
 ```cpp
 #include <google/protobuf/timestamp.pb.h>
-#include "protodesc/protodesc.hpp"
+#include "filedesc/filedesc.hpp"
 
-auto protos = protodesc::CollectForMessage(google::protobuf::Timestamp::descriptor());
+auto protos = filedesc::CollectForMessage(google::protobuf::Timestamp::descriptor());
 for (const auto& p : protos) {
     std::cout << p.name() << "\n";
 }
@@ -91,8 +92,9 @@ ctest
 
 ## Notes
 
-- Dependencies are collected in depth-first order and deduplicated across a
-  single collector instance.
+- Dependencies are collected in depth-first order and deduplicated within a
+  single collection. A `FileDescriptorSetCollector` instance can be reused for
+  multiple independent collections.
 - If you need a single combined `FileDescriptorSet`, wrap the returned protos in
   one:
 

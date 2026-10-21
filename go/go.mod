@@ -1,4 +1,4 @@
-module github.com/ytakio/protodesc
+module github.com/ytakio/filedesc-collector
 
 go 1.27
 

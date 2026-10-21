@@ -1,5 +1,5 @@
-add_executable(protodesc_test test_protodesc.cpp)
-target_link_libraries(protodesc_test PRIVATE protodesc GTest::gtest_main absl::log_initialize absl::check)
+add_executable(filedesc_test test_filedesc.cpp)
+target_link_libraries(filedesc_test PRIVATE filedesc GTest::gtest_main absl::log_initialize absl::check)
 
-add_test(NAME protodesc_test COMMAND protodesc_test)
+add_test(NAME filedesc_test COMMAND filedesc_test)
 

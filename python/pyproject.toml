@@ -1,5 +1,5 @@
 [project]
-name = "protodesc"
+name = "filedesc-collector"
 version = "0.1.0"
 description = "Collect FileDescriptorSets including transitive dependencies"
 requires-python = ">=3.9"

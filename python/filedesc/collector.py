@@ -1,4 +1,8 @@
-"""Collect FileDescriptorProtos including transitive dependencies."""
+"""Collect FileDescriptorProtos including transitive dependencies.
+
+Package filedesc provides utilities for collecting FileDescriptorSet contents
+from protobuf descriptors.
+"""
 
 from __future__ import annotations
 
