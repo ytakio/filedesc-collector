@@ -108,9 +108,12 @@ func run() (err error) {
 	// Register schemas and channels from the channelConfigs table.
 	channelIDs := make([]uint16, len(channelConfigs))
 	for i, cfg := range channelConfigs {
-		schema, err := registerSchema(w, nextSchemaID, cfg.schemaMsg)
+		schema, err := createSchema(nextSchemaID, cfg.schemaMsg)
 		if err != nil {
-			return fmt.Errorf("register schema for %s: %w", cfg.topic, err)
+			return fmt.Errorf("create schema for %s: %w", cfg.topic, err)
+		}
+		if err := w.WriteSchema(schema); err != nil {
+			return fmt.Errorf("write schema for %s: %w", cfg.topic, err)
 		}
 		nextSchemaID++
 
@@ -145,7 +148,7 @@ func run() (err error) {
 	return nil
 }
 
-func registerSchema(w *mcap.Writer, id uint16, msg proto.Message) (*mcap.Schema, error) {
+func createSchema(id uint16, msg proto.Message) (*mcap.Schema, error) {
 	descriptor := msg.ProtoReflect()
 	collector := filedesc.NewCollector()
 	fdProtos, err := collector.CollectForMessage(descriptor)
@@ -153,22 +156,19 @@ func registerSchema(w *mcap.Writer, id uint16, msg proto.Message) (*mcap.Schema,
 		return nil, fmt.Errorf("collect file descriptors: %w", err)
 	}
 
-	fds := &descriptorpb.FileDescriptorSet{File: fdProtos}
-	fdSetBytes, err := proto.Marshal(fds)
+	fdSetBytes, err := proto.Marshal(&descriptorpb.FileDescriptorSet{
+		File: fdProtos,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("marshal file descriptor set: %w", err)
 	}
 
-	schema := &mcap.Schema{
+	return &mcap.Schema{
 		ID:       id,
 		Name:     string(descriptor.Descriptor().FullName()),
 		Encoding: "protobuf",
 		Data:     fdSetBytes,
-	}
-	if err := w.WriteSchema(schema); err != nil {
-		return nil, fmt.Errorf("write schema: %w", err)
-	}
-	return schema, nil
+	}, nil
 }
 
 func writeMessage(w *mcap.Writer, channelID uint16, sequence uint32, logTime uint64, msg proto.Message) error {
