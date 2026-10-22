@@ -141,6 +141,20 @@ make
 ctest
 ```
 
+## Examples
+
+The repository includes end-to-end MCAP writer examples in three languages.
+Each example writes a small MCAP file using `filedesc-collector` to supply
+protobuf `FileDescriptorSet` schemas and a popular MCAP writer library to create
+the file.
+
+- [`python/example/mcapwriter`](python/example/mcapwriter) — Python example
+  using `mcap-protobuf-support` and `foxglove-schemas-protobuf`.
+- [`cpp/example/mcapwriter`](cpp/example/mcapwriter) — C++ example using the
+  Foxglove SDK C++ and a generic protobuf channel.
+- [`go/example/mcapwriter`](go/example/mcapwriter) — Go example using the
+  Foxglove MCAP Go SDK and generated Foxglove protobuf bindings.
+
 ## Notes
 
 - Dependencies are collected in depth-first order and deduplicated within a

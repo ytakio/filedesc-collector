@@ -1,0 +1,4 @@
+filedesc-collector @ file://../../
+foxglove-sdk>=0.30
+protobuf>=5.0
+

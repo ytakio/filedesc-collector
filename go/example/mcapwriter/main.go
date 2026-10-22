@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/foxglove/mcap/go/mcap"
-	"github.com/ytakio/filedesc-collector/go/example/mcapwriter/protobuf/foxglove"
+	"github.com/ytakio/filedesc-collector/go/example/mcapwriter/proto/foxglove"
 	"github.com/ytakio/filedesc-collector/go/filedesc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
