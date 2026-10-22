@@ -139,7 +139,12 @@ func run() (err error) {
 
 		for j, cfg := range channelConfigs {
 			msg := cfg.populate(t, i)
-			m, err := createMessage(channelIDs[j], uint32(i+1), nanos, msg)
+			m, err := createMessage(
+				channelIDs[j],
+				uint32(i+1),
+				nanos,
+				msg,
+			)
 			if err != nil {
 				return fmt.Errorf("create message %d on %s: %w", i, cfg.topic, err)
 			}
