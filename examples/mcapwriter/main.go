@@ -12,7 +12,6 @@ import (
 	"github.com/ytakio/filedesc-collector/examples/mcapwriter/foxglove"
 	"github.com/ytakio/filedesc-collector/go/filedesc"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -29,7 +28,7 @@ func main() {
 // type used for its schema, and a populate function that builds each sample.
 type channelConfig struct {
 	topic     string
-	schemaMsg protoreflect.Message
+	schemaMsg proto.Message
 	populate  func(t time.Time, i int) proto.Message
 }
 
@@ -38,7 +37,7 @@ type channelConfig struct {
 var channelConfigs = []channelConfig{
 	{
 		topic:     "/timestamp",
-		schemaMsg: (*timestamppb.Timestamp)(nil).ProtoReflect(),
+		schemaMsg: (*timestamppb.Timestamp)(nil),
 		populate: func(t time.Time, i int) proto.Message {
 			return &timestamppb.Timestamp{
 				Seconds: t.Unix(),
@@ -48,7 +47,7 @@ var channelConfigs = []channelConfig{
 	},
 	{
 		topic:     "/sensor/dummy",
-		schemaMsg: (*foxglove.SceneUpdate)(nil).ProtoReflect(),
+		schemaMsg: (*foxglove.SceneUpdate)(nil),
 		populate: func(t time.Time, i int) proto.Message {
 			return &foxglove.SceneUpdate{
 				Entities: []*foxglove.SceneEntity{
@@ -146,9 +145,10 @@ func run() (err error) {
 	return nil
 }
 
-func registerSchema(w *mcap.Writer, id uint16, msg protoreflect.Message) (*mcap.Schema, error) {
+func registerSchema(w *mcap.Writer, id uint16, msg proto.Message) (*mcap.Schema, error) {
+	descriptor := msg.ProtoReflect()
 	collector := filedesc.NewCollector()
-	fdProtos, err := collector.CollectForMessage(msg)
+	fdProtos, err := collector.CollectForMessage(descriptor)
 	if err != nil {
 		return nil, fmt.Errorf("collect file descriptors: %w", err)
 	}
@@ -161,7 +161,7 @@ func registerSchema(w *mcap.Writer, id uint16, msg protoreflect.Message) (*mcap.
 
 	schema := &mcap.Schema{
 		ID:       id,
-		Name:     string(msg.Descriptor().FullName()),
+		Name:     string(descriptor.Descriptor().FullName()),
 		Encoding: "protobuf",
 		Data:     fdSetBytes,
 	}
