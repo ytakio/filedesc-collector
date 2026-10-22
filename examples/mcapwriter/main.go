@@ -139,7 +139,11 @@ func run() (err error) {
 
 		for j, cfg := range channelConfigs {
 			msg := cfg.populate(t, i)
-			if err := writeMessage(w, channelIDs[j], uint32(i+1), nanos, msg); err != nil {
+			m, err := createMessage(channelIDs[j], uint32(i+1), nanos, msg)
+			if err != nil {
+				return fmt.Errorf("create message %d on %s: %w", i, cfg.topic, err)
+			}
+			if err := w.WriteMessage(m); err != nil {
 				return fmt.Errorf("write message %d on %s: %w", i, cfg.topic, err)
 			}
 		}
@@ -171,21 +175,17 @@ func createSchema(id uint16, msg proto.Message) (*mcap.Schema, error) {
 	}, nil
 }
 
-func writeMessage(w *mcap.Writer, channelID uint16, sequence uint32, logTime uint64, msg proto.Message) error {
+func createMessage(channelID uint16, sequence uint32, logTime uint64, msg proto.Message) (*mcap.Message, error) {
 	data, err := proto.Marshal(msg)
 	if err != nil {
-		return fmt.Errorf("marshal message: %w", err)
+		return nil, fmt.Errorf("marshal message: %w", err)
 	}
 
-	m := &mcap.Message{
+	return &mcap.Message{
 		ChannelID:   channelID,
 		Sequence:    sequence,
 		LogTime:     logTime,
 		PublishTime: logTime,
 		Data:        data,
-	}
-	if err := w.WriteMessage(m); err != nil {
-		return fmt.Errorf("write message: %w", err)
-	}
-	return nil
+	}, nil
 }
