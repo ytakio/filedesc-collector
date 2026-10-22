@@ -1,9 +1,7 @@
 build/
 __pycache__/
 go.work.sum
+proto/
 *.pb.go
-examples/mcapwriter/mcapwriter
-examples/mcapwriter/output.mcap
-examples/mcapwriter/foxglove/*.proto
-examples/mcapwriter/foxglove-sdk-*.tar.gz
-examples/mcapwriter/foxglove-sdk-sdk-*/
+*.mcap
+*.tar.gz

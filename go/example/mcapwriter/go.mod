@@ -1,4 +1,4 @@
-module github.com/ytakio/filedesc-collector/examples/mcapwriter
+module github.com/ytakio/filedesc-collector/go/example/mcapwriter
 
 go 1.27
 
@@ -19,4 +19,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/ytakio/filedesc-collector => ../..
+replace github.com/ytakio/filedesc-collector => ../../..

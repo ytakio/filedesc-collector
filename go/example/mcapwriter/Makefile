@@ -11,8 +11,8 @@ FOXGLOVE_SDK_URL := https://github.com/foxglove/foxglove-sdk/archive/refs/tags/$
 FOXGLOVE_SDK_TARBALL := foxglove-sdk-$(subst /,-,$(FOXGLOVE_SDK_VERSION)).tar.gz
 FOXGLOVE_SDK_DIR := foxglove-sdk-sdk-v0.30.2
 FOXGLOVE_PROTO_SRC := $(FOXGLOVE_SDK_DIR)/schemas/proto/foxglove
-FOXGLOVE_PROTO_DIR := foxglove
-GO_PACKAGE := github.com/ytakio/filedesc-collector/examples/mcapwriter/foxglove
+FOXGLOVE_PROTO_DIR := ../../proto/foxglove
+GO_PACKAGE := github.com/ytakio/filedesc-collector/go/example/mcapwriter/protobuf/foxglove
 
 all: build
 

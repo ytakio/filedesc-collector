@@ -16,6 +16,25 @@ On macOS with Homebrew:
 brew install protobuf googletest
 ```
 
+## Install
+
+Use CMake's `FetchContent` to consume the library directly from this repository:
+
+```cmake
+include(FetchContent)
+
+FetchContent_Declare(
+  filedesc
+  GIT_REPOSITORY https://github.com/ytakio/filedesc-collector.git
+  GIT_TAG        main
+  SOURCE_SUBDIR  cpp
+)
+
+FetchContent_MakeAvailable(filedesc)
+
+target_link_libraries(your_target PRIVATE filedesc)
+```
+
 ## Build
 
 Because this is a header-only library, there is no library binary to build. The

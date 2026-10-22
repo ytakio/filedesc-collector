@@ -2,5 +2,5 @@ go 1.27
 
 use (
 	.
-	./examples/mcapwriter
+	./go/example/mcapwriter
 )

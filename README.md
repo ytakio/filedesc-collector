@@ -18,6 +18,14 @@ Repository: `github.com/ytakio/filedesc-collector`
 Module path: `github.com/ytakio/filedesc-collector`
 Package path: `github.com/ytakio/filedesc-collector/go/filedesc`
 
+### Install
+
+```bash
+go get github.com/ytakio/filedesc-collector/go/filedesc
+```
+
+### Usage
+
 ```go
 import (
     "fmt"
@@ -50,6 +58,22 @@ go test ./...
 Package name: `filedesc-collector`
 Import name: `filedesc`
 
+### Install
+
+From PyPI (when published):
+
+```bash
+pip install filedesc-collector
+```
+
+Directly from this repository:
+
+```bash
+pip install "filedesc-collector @ git+https://github.com/ytakio/filedesc-collector.git#subdirectory=python"
+```
+
+### Usage
+
 ```python
 from google.protobuf.timestamp_pb2 import Timestamp
 from filedesc import FileDescriptorSetCollector
@@ -71,6 +95,27 @@ pytest
 ## C++
 
 Header-only library. Include path: `filedesc/filedesc.hpp`
+
+### Install
+
+Use CMake's `FetchContent` to consume the library directly from this repository:
+
+```cmake
+include(FetchContent)
+
+FetchContent_Declare(
+  filedesc
+  GIT_REPOSITORY https://github.com/ytakio/filedesc-collector.git
+  GIT_TAG        main
+  SOURCE_SUBDIR  cpp
+)
+
+FetchContent_MakeAvailable(filedesc)
+
+target_link_libraries(your_target PRIVATE filedesc)
+```
+
+### Usage
 
 ```cpp
 #include <google/protobuf/timestamp.pb.h>
