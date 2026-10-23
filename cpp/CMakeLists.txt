@@ -30,3 +30,8 @@ if(BUILD_TESTING)
     endif()
 endif()
 
+option(BUILD_EXAMPLES "Build examples" ON)
+if(BUILD_EXAMPLES)
+    add_subdirectory(example/mcapwriter)
+endif()
+

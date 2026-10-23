@@ -52,8 +52,7 @@ int main() {
     // Create a generic protobuf channel for google.protobuf.Timestamp using a
     // FileDescriptorSet collected by filedesc-collector as its schema.
     const gp::Descriptor *timestamp_descriptor = gp::Timestamp::descriptor();
-    std::string timestamp_fdset =
-        BuildFileDescriptorSet(timestamp_descriptor);
+    std::string timestamp_fdset = BuildFileDescriptorSet(timestamp_descriptor);
 
     foxglove::Schema timestamp_schema;
     timestamp_schema.encoding = "protobuf";
@@ -62,13 +61,11 @@ int main() {
         reinterpret_cast<const std::byte *>(timestamp_fdset.data());
     timestamp_schema.data_len = timestamp_fdset.size();
 
-    auto timestamp_channel_result =
-        foxglove::RawChannel::create("/timestamp", "protobuf",
-                                     std::move(timestamp_schema));
+    auto timestamp_channel_result = foxglove::RawChannel::create(
+        "/timestamp", "protobuf", std::move(timestamp_schema));
     if (!timestamp_channel_result.has_value()) {
       std::cerr << "Failed to create timestamp channel: "
-                << foxglove::strerror(timestamp_channel_result.error())
-                << '\n';
+                << foxglove::strerror(timestamp_channel_result.error()) << '\n';
       return 1;
     }
     auto timestamp_channel = std::move(timestamp_channel_result.value());
@@ -98,8 +95,8 @@ int main() {
       gp::Timestamp timestamp;
       timestamp.set_seconds(seconds.count());
       timestamp.set_nanos(static_cast<int32_t>(
-          std::chrono::duration_cast<std::chrono::nanoseconds>(
-              since_epoch - seconds)
+          std::chrono::duration_cast<std::chrono::nanoseconds>(since_epoch -
+                                                               seconds)
               .count()));
       std::string timestamp_data = timestamp.SerializeAsString();
       const uint64_t log_time_ns = static_cast<uint64_t>(
@@ -118,9 +115,10 @@ int main() {
 
       auto &cube = entity.cubes.emplace_back();
       cube.pose.emplace();
-      cube.pose->position = foxglove::messages::Vector3{
-          static_cast<double>(i), 0.0, 0.0};
-      cube.pose->orientation = foxglove::messages::Quaternion{0.0, 0.0, 0.0, 1.0};
+      cube.pose->position =
+          foxglove::messages::Vector3{static_cast<double>(i), 0.0, 0.0};
+      cube.pose->orientation =
+          foxglove::messages::Quaternion{0.0, 0.0, 0.0, 1.0};
       cube.size = foxglove::messages::Vector3{1.0, 1.0, 1.0};
       cube.color = foxglove::messages::Color{1.0, 0.5, 0.0, 1.0};
 
@@ -134,4 +132,3 @@ int main() {
     return 1;
   }
 }
-

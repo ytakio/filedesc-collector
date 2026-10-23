@@ -72,9 +72,7 @@ def write_mcap(output_path: str) -> None:
                 seconds=int(t.timestamp()),
                 nanos=t.microsecond * 1000,
             )
-            timestamp_channel.log(
-                timestamp.SerializeToString(), log_time=log_time_ns
-            )
+            timestamp_channel.log(timestamp.SerializeToString(), log_time=log_time_ns)
 
             scene_channel.log(
                 SceneUpdate(
@@ -85,9 +83,7 @@ def write_mcap(output_path: str) -> None:
                             cubes=[
                                 CubePrimitive(
                                     pose=Pose(
-                                        position=Vector3(
-                                            x=float(i), y=0.0, z=0.0
-                                        ),
+                                        position=Vector3(x=float(i), y=0.0, z=0.0),
                                         orientation=Quaternion(
                                             x=0.0, y=0.0, z=0.0, w=1.0
                                         ),
@@ -112,4 +108,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

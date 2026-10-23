@@ -23,7 +23,9 @@ class FileDescriptorSetCollector:
             raise ValueError("descriptor must not be None")
         return self.collect_for_descriptor(descriptor.file)
 
-    def collect_for_descriptor(self, file_descriptor: FileDescriptor) -> list[FileDescriptorProto]:
+    def collect_for_descriptor(
+        self, file_descriptor: FileDescriptor
+    ) -> list[FileDescriptorProto]:
         """Return FileDescriptorProtos for ``file_descriptor`` and its deps."""
         if file_descriptor is None:
             raise ValueError("file_descriptor must not be None")
@@ -52,4 +54,3 @@ class FileDescriptorSetCollector:
             return result
 
         return collect_file(file_descriptor)
-
