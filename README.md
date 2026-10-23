@@ -151,7 +151,7 @@ the file.
 - [`python/example/mcapwriter`](python/example/mcapwriter) — Python example
   using `mcap-protobuf-support` and `foxglove-schemas-protobuf`.
 - [`cpp/example/mcapwriter`](cpp/example/mcapwriter) — C++ example using the
-  Foxglove SDK C++ and a generic protobuf channel.
+  Foxglove MCAP C++ library and generated Foxglove protobuf bindings.
 - [`go/example/mcapwriter`](go/example/mcapwriter) — Go example using the
   Foxglove MCAP Go SDK and generated Foxglove protobuf bindings.
 

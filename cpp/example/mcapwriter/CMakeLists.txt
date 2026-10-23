@@ -8,73 +8,92 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(Protobuf REQUIRED)
 find_package(absl REQUIRED)
 
-# Determine the Foxglove SDK release archive for the current platform.
-set(FOXGLOVE_SDK_VERSION "v0.30.2")
-if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  if(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
-    set(FOXGLOVE_SDK_TRIPLE "aarch64-apple-darwin")
-    set(FOXGLOVE_SDK_SHA256 "74454dcedac00fab8f1dd5308f88b101f87d15bf67e99e53def8d5dd11d05a81")
-  elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-    set(FOXGLOVE_SDK_TRIPLE "x86_64-apple-darwin")
-    set(FOXGLOVE_SDK_SHA256 "b3a521bdc2d2959dc1975b6f16b21472160544abb482a92a7597153c86e2a144")
-  else()
-    message(FATAL_ERROR "Unsupported macOS architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-  endif()
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  if(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
-    set(FOXGLOVE_SDK_TRIPLE "aarch64-unknown-linux-gnu")
-    set(FOXGLOVE_SDK_SHA256 "9e388b0374ef2c3aa152bcfd1d7f4a8105283abd39cb5ea4ae74619bcfeb7fd7")
-  elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-    set(FOXGLOVE_SDK_TRIPLE "x86_64-unknown-linux-gnu")
-    set(FOXGLOVE_SDK_SHA256 "71bf8ded6907f2abb528b7844d9d441d82b93e0679c88724fc1144e6567be2d9")
-  else()
-    message(FATAL_ERROR "Unsupported Linux architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-  endif()
-else()
-  message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
+# The foxglove/mcap C++ library is header-only but depends on lz4 and zstd for
+# chunk compression. Try pkg-config first, then fall back to well-known paths.
+find_package(PkgConfig)
+if(PkgConfig_FOUND)
+  pkg_check_modules(LZ4 IMPORTED_TARGET liblz4)
+  pkg_check_modules(ZSTD IMPORTED_TARGET libzstd)
 endif()
 
-set(FOXGLOVE_SDK_URL
-  "https://github.com/foxglove/foxglove-sdk/releases/download/sdk/${FOXGLOVE_SDK_VERSION}/foxglove-${FOXGLOVE_SDK_VERSION}-cpp-${FOXGLOVE_SDK_TRIPLE}.zip"
-)
+if(NOT TARGET PkgConfig::LZ4)
+  find_library(LZ4_LIBRARY NAMES lz4 PATHS /opt/homebrew/lib /usr/local/lib)
+  find_path(LZ4_INCLUDE_DIR NAMES lz4frame.h PATHS /opt/homebrew/include /usr/local/include)
+  if(NOT LZ4_LIBRARY OR NOT LZ4_INCLUDE_DIR)
+    message(FATAL_ERROR "lz4 not found. Install it (e.g. brew install lz4 or apt install liblz4-dev)")
+  endif()
+  add_library(PkgConfig::LZ4 UNKNOWN IMPORTED)
+  set_target_properties(PkgConfig::LZ4 PROPERTIES
+    IMPORTED_LOCATION ${LZ4_LIBRARY}
+    INTERFACE_INCLUDE_DIRECTORIES ${LZ4_INCLUDE_DIR}
+  )
+endif()
 
-# Fetch the Foxglove SDK release archive.
+if(NOT TARGET PkgConfig::ZSTD)
+  find_library(ZSTD_LIBRARY NAMES zstd PATHS /opt/homebrew/lib /usr/local/lib)
+  find_path(ZSTD_INCLUDE_DIR NAMES zstd.h PATHS /opt/homebrew/include /usr/local/include)
+  if(NOT ZSTD_LIBRARY OR NOT ZSTD_INCLUDE_DIR)
+    message(FATAL_ERROR "zstd not found. Install it (e.g. brew install zstd or apt install libzstd-dev)")
+  endif()
+  add_library(PkgConfig::ZSTD UNKNOWN IMPORTED)
+  set_target_properties(PkgConfig::ZSTD PROPERTIES
+    IMPORTED_LOCATION ${ZSTD_LIBRARY}
+    INTERFACE_INCLUDE_DIRECTORIES ${ZSTD_INCLUDE_DIR}
+  )
+endif()
+
+# Fetch the foxglove/mcap C++ header-only library. It does not have a
+# CMakeLists.txt at its root, so we only populate the source tree and use the
+# include directory directly.
 include(FetchContent)
+if(POLICY CMP0169)
+  # FetchContent_Populate with declared details is deprecated in CMake 3.30+,
+  # but mcap has no top-level CMakeLists.txt for FetchContent_MakeAvailable.
+  cmake_policy(SET CMP0169 OLD)
+endif()
 FetchContent_Declare(
-  foxglove_sdk
-  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-  URL ${FOXGLOVE_SDK_URL}
-  URL_HASH SHA256=${FOXGLOVE_SDK_SHA256}
+  mcap
+  GIT_REPOSITORY https://github.com/foxglove/mcap.git
+  GIT_TAG releases/cpp/v2.2.0
 )
-FetchContent_MakeAvailable(foxglove_sdk)
-
-# Load the SDK's CMake package config.
-find_package(foxglove-sdk CONFIG REQUIRED HINTS "${foxglove_sdk_SOURCE_DIR}")
-
-# Compile the SDK's C++ wrapper sources against our toolchain.
-foxglove_sdk_add_cpp_library(foxglove_cpp TYPE STATIC)
+FetchContent_GetProperties(mcap)
+if(NOT mcap_POPULATED)
+  FetchContent_Populate(mcap)
+endif()
+set(MCAP_INCLUDE_DIR ${mcap_SOURCE_DIR}/cpp/mcap/include)
 
 # filedesc-collector header lives two directories above this example.
 set(FILEDESC_INCLUDE_DIR ../../include)
 
-add_executable(mcapwriter main.cpp)
+# Generated protobuf C++ sources for foxglove schemas. The Makefile downloads
+# the .proto files and runs protoc before invoking CMake.
+set(PROTO_GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../proto)
+file(GLOB FOXGLOVE_PB_SOURCES CONFIGURE_DEPENDS ${PROTO_GEN_DIR}/foxglove/*.pb.cc)
+file(GLOB FOXGLOVE_PB_HEADERS CONFIGURE_DEPENDS ${PROTO_GEN_DIR}/foxglove/*.pb.h)
+
+add_executable(mcapwriter main.cpp ${FOXGLOVE_PB_SOURCES})
 
 target_include_directories(mcapwriter PRIVATE
   ${FILEDESC_INCLUDE_DIR}
+  ${MCAP_INCLUDE_DIR}
+  ${PROTO_GEN_DIR}
 )
 
 target_link_libraries(mcapwriter PRIVATE
-  foxglove_cpp
   protobuf::libprotobuf
+  PkgConfig::LZ4
+  PkgConfig::ZSTD
   absl::log_internal_check_op
   absl::log_internal_message
 )
 
-# On macOS the Foxglove SDK static library links IOKit symbols.
-if(APPLE)
-  target_link_libraries(mcapwriter PRIVATE
-    "-framework IOKit"
-    "-framework Foundation"
+# Protobuf-generated code triggers a number of pedantic warnings; silence them
+# for this example so -Werror in a parent project does not break the build.
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+  target_compile_options(mcapwriter PRIVATE
+    -Wno-unused-parameter
+    -Wno-shadow
+    -Wno-pedantic
   )
 endif()
 

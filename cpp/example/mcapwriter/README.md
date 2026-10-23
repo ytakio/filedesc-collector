@@ -2,18 +2,13 @@
 
 This example writes a small MCAP file using:
 
-- `filedesc-collector` (header-only) to collect protobuf `FileDescriptorSet` schemas
-- `foxglove-sdk` (the official Foxglove SDK for C++) to write the file
+- `filedesc-collector` (header-only) to collect protobuf
+  `FileDescriptorSet` schemas
+- the [Foxglove MCAP C++ library](https://github.com/foxglove/mcap) to write
+  the file
 - `google.protobuf.Timestamp` and `foxglove.SceneUpdate` as sample messages
 
-This mirrors the Go `go/example/mcapwriter` example.
-
-The Foxglove SDK C++ provides native `foxglove::messages::SceneUpdate` and
-`foxglove::messages::SceneUpdateChannel` classes, so the SceneUpdate channel
-does not require manual protobuf serialization or a generated
-`FileDescriptorSet`. The `/timestamp` channel, on the other hand, uses a
-generic `foxglove::RawChannel` with a `FileDescriptorSet` produced by
-`filedesc-collector`.
+This mirrors the Go and Python `mcapwriter` examples.
 
 ## Build
 
@@ -22,8 +17,9 @@ cd cpp/example/mcapwriter
 make build
 ```
 
-This runs CMake and fetches the Foxglove SDK release archive for the current
-platform automatically.
+This downloads the Foxglove SDK protobuf schemas, extracts them into
+`proto/foxglove/` at the repository root, generates C++ protobuf bindings into
+`cpp/proto/foxglove/`, and then builds the example with CMake.
 
 ## Run
 
@@ -44,20 +40,22 @@ This creates `output.mcap` in the build directory.
 
 - CMake 3.20+
 - C++17 compiler
-- Protobuf development libraries
+- Protobuf development libraries (tested with 7.36.2 / protobuf 36.2)
 - Abseil (required by modern Protobuf)
-- Network access to fetch the Foxglove SDK release archive
+- lz4 and zstd libraries (required by the MCAP writer for chunk compression)
+- Network access to fetch the foxglove/mcap C++ headers and Foxglove schema tarball
 
 On macOS with Homebrew:
 
 ```bash
-brew install protobuf
+brew install protobuf lz4 zstd pkg-config
 ```
 
 On Ubuntu/Debian:
 
 ```bash
-sudo apt-get install cmake libprotobuf-dev protobuf-compiler libabsl-dev
+sudo apt-get install cmake libprotobuf-dev protobuf-compiler libabsl-dev \
+  liblz4-dev libzstd-dev pkg-config
 ```
 
 ## Clean
@@ -66,3 +64,12 @@ sudo apt-get install cmake libprotobuf-dev protobuf-compiler libabsl-dev
 make clean
 ```
 
+This removes the build directory and the generated `proto/` directory under
+this example.
+
+To also remove the shared schema archive and extracted `.proto` files from the
+repository root, run:
+
+```bash
+make clean-all
+```
