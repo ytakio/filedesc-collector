@@ -32,19 +32,16 @@ protoc: | $(PROTO_DIR)
 
 $(PROTO_DIR): $(FOXGLOVE_TARBALL)
 	@mkdir -p $(PROTO_DIR)
-	@tar xzf $< -C $(PROTO_DIR) --strip-components=3 '*/schemas/proto/*/*.proto'
+	@tar xzf $< -C $(PROTO_DIR) --strip-components=3 '*/schemas/proto/*'
 
 # C-style source/object lists, evaluated after extraction.
-SRCS := $(wildcard $(PROTO_DIR)/*/*.proto)
+SRCS := $(shell find $(PROTO_DIR) -name '*.proto' 2>/dev/null)
 OBJS := $(SRCS:.proto=.pb.go)
 
-# Discover schema directories (e.g. proto/foxglove) and build per-directory
-# --go_opt=M mappings so each schema package imports from $(GO_MODULE)/proto/<dir>.
-SCHEMA_DIRS := $(sort $(patsubst %/,%,$(dir $(SRCS))))
-SCHEMA_NAMES := $(notdir $(SCHEMA_DIRS))
-GO_OPTS := $(foreach name,$(SCHEMA_NAMES),\
-	$(foreach src,$(wildcard $(PROTO_DIR)/$(name)/*.proto),\
-		--go_opt=M$(name)/$(notdir $(src))=$(GO_MODULE)/proto/$(name)))
+# Map each .proto file to its Go import path. The proto import path is the
+# path under $(PROTO_DIR); the Go package is $(GO_MODULE)/<schema-dir>.
+GO_OPTS := $(foreach src,$(SRCS),\
+	--go_opt=M$(patsubst $(PROTO_DIR)/%/,%,$(src)=$(GO_MODULE)/$(dir $(src))))
 
 .PHONY: pbgo
 pbgo: $(OBJS)
