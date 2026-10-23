@@ -1,4 +1,4 @@
-.PHONY: all build run clean proto
+.PHONY: all build run clean protoc
 
 BINARY := mcapwriter
 OUTPUT := output.mcap
@@ -8,56 +8,56 @@ FOXGLOVE_TAG := sdk/v0.30.2
 FOXGLOVE_TARBALL := foxglove-sdk.tar.gz
 FOXGLOVE_URL := https://github.com/foxglove/foxglove-sdk/archive/refs/tags/$(FOXGLOVE_TAG).tar.gz
 
-# Directory where downloaded .proto files and generated .pb.go files coexist.
 PROTO_DIR := proto
-PROTO_OUT_DIR := $(PROTO_DIR)/foxglove
-GO_PACKAGE := github.com/ytakio/filedesc-collector/go/example/mcapwriter/proto/foxglove
+GO_MODULE := github.com/ytakio/filedesc-collector/go/example/mcapwriter
 
-# Generated rules that define the real .pb.go targets.  This include is rebuilt
-# whenever the tarball changes, which also re-extracts the .proto files.  GNU
-# Make restarts after rebuilding an included makefile.
--include $(PROTO_OUT_DIR)/.proto-rules.mk
+# protoc-gen-go is declared as a Go tool in go.mod; resolve its path lazily.
+PROTOC_GEN_GO = $(shell go tool -n protoc-gen-go)
 
 all: build
 
-build: proto
+build: protoc
 	go build -o $(BINARY) .
 
-run: proto
+run: protoc
 	go run .
 
 clean:
 	rm -f $(BINARY) $(OUTPUT)
-	rm -rf $(PROTO_DIR) $(FOXGLOVE_TARBALL)
+	rm -rf $(PROTO_DIR)
 
-# Extract the tarball and emit a makefile fragment describing the actual
-# proto/foxglove/*.proto -> proto/foxglove/*.pb.go targets.
-$(PROTO_OUT_DIR)/.proto-rules.mk: $(FOXGLOVE_TARBALL)
-	@mkdir -p $(PROTO_OUT_DIR)
-	@rm -rf $(PROTO_OUT_DIR).tmp
-	@mkdir -p $(PROTO_OUT_DIR).tmp
-	@tar xzf $< -C $(PROTO_OUT_DIR).tmp
-	@cp $(PROTO_OUT_DIR).tmp/*/schemas/proto/foxglove/*.proto $(PROTO_OUT_DIR)/
-	@rm -rf $(PROTO_OUT_DIR).tmp
-	@printf '# Auto-generated proto build rules. Do not edit.\n' > $@
-	@printf 'PROTO_FILES := $$(wildcard $(PROTO_OUT_DIR)/*.proto)\n' >> $@
-	@printf 'PB_GO_FILES := $$(patsubst %%.proto,%%.pb.go,$$(PROTO_FILES))\n' >> $@
-	@printf '\n' >> $@
-	@printf 'proto: $$(PB_GO_FILES)\n' >> $@
-	@printf '\n' >> $@
-	@printf '$$(PB_GO_FILES): $$(PROTO_OUT_DIR)/.generated\n' >> $@
-	@printf '\t@touch $$@\n' >> $@
-	@printf '\n' >> $@
-	@printf '$$(PROTO_OUT_DIR)/.generated: $$(PROTO_FILES)\n' >> $@
-	@printf '\t@cd $(PROTO_DIR) && \\\n' >> $@
-	@printf '\tprotoc \\\n' >> $@
-	@printf '\t\t--go_prefix="go tool" \\\n' >> $@
-	@printf '\t\t--proto_path=. \\\n' >> $@
-	@printf '\t\t--go_out=. \\\n' >> $@
-	@printf '\t\t--go_opt=paths=source_relative \\\n' >> $@
-	@printf '\t\t$$(foreach proto,$$(notdir $$(PROTO_FILES)),--go_opt=Mfoxglove/$$(proto)=$(GO_PACKAGE)) \\\n' >> $@
-	@printf '\t\t$$(patsubst $(PROTO_DIR)/%%,%%,$$(PROTO_FILES))\n' >> $@
-	@printf '\t@touch $$@\n' >> $@
+# Extract .proto files first, then let a sub-make see them via wildcard.
+protoc: | $(PROTO_DIR)
+	$(MAKE) pbgo
+
+$(PROTO_DIR): $(FOXGLOVE_TARBALL)
+	@mkdir -p $(PROTO_DIR)
+	@tar xzf $< -C $(PROTO_DIR) --strip-components=3 '*/schemas/proto/*/*.proto'
+
+# C-style source/object lists, evaluated after extraction.
+SRCS := $(wildcard $(PROTO_DIR)/*/*.proto)
+OBJS := $(SRCS:.proto=.pb.go)
+
+# Discover schema directories (e.g. proto/foxglove) and build per-directory
+# --go_opt=M mappings so each schema package imports from $(GO_MODULE)/proto/<dir>.
+SCHEMA_DIRS := $(sort $(patsubst %/,%,$(dir $(SRCS))))
+SCHEMA_NAMES := $(notdir $(SCHEMA_DIRS))
+GO_OPTS := $(foreach name,$(SCHEMA_NAMES),\
+	$(foreach src,$(wildcard $(PROTO_DIR)/$(name)/*.proto),\
+		--go_opt=M$(name)/$(notdir $(src))=$(GO_MODULE)/proto/$(name)))
+
+.PHONY: pbgo
+pbgo: $(OBJS)
+
+# protoc generates all .pb.go files in one invocation.
+$(OBJS): $(SRCS)
+	protoc \
+		--plugin=protoc-gen-go=$(PROTOC_GEN_GO) \
+		--proto_path=$(PROTO_DIR) \
+		--go_out=$(PROTO_DIR) \
+		--go_opt=paths=source_relative \
+		$(GO_OPTS) \
+		$(SRCS)
 
 $(FOXGLOVE_TARBALL):
 	curl -sL -o $@ $(FOXGLOVE_URL)
