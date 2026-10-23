@@ -9,7 +9,7 @@ FOXGLOVE_TARBALL := foxglove-sdk.tar.gz
 FOXGLOVE_URL := https://github.com/foxglove/foxglove-sdk/archive/refs/tags/$(FOXGLOVE_TAG).tar.gz
 
 PROTO_DIR := proto
-GO_MODULE := github.com/ytakio/filedesc-collector/go/example/mcapwriter
+GO_MODULE := $(shell go list -f '{{.Module.Path}}')
 
 # protoc-gen-go is declared as a Go tool in go.mod; resolve its path lazily.
 PROTOC_GEN_GO = $(shell go tool -n protoc-gen-go)
