@@ -5,7 +5,7 @@ go 1.27
 require (
 	github.com/foxglove/mcap/go/mcap v1.5.0
 	github.com/ytakio/filedesc-collector v0.0.0
-	google.golang.org/protobuf v1.35.1
+	google.golang.org/protobuf v1.36.12
 )
 
 require (
@@ -20,3 +20,7 @@ require (
 )
 
 replace github.com/ytakio/filedesc-collector => ../../..
+
+tool (
+	google.golang.org/protobuf/cmd/protoc-gen-go
+)
