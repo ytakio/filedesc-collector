@@ -16,8 +16,8 @@ FOXGLOVE_URL := https://github.com/foxglove/foxglove-sdk/archive/refs/tags/$(FOX
 # Repo-root directory where upstream .proto schemas are extracted.
 PROTO_ROOT := $(REPO_ROOT)/proto
 
-# Directory where generated Go protobuf bindings are emitted.
-GEN_DIR := $(BUILD_DIR)/proto
+# Directory under go/ where generated Go protobuf bindings are emitted.
+GEN_DIR := proto
 
 # protoc-gen-go is declared as a Go tool in go.mod; resolve its path lazily.
 PROTOC_GEN_GO = $(shell go tool -n protoc-gen-go)
@@ -38,7 +38,7 @@ run: protoc
 	cd $(EXAMPLE_DIR) && go run .
 
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) $(GEN_DIR)
 
 # Shared cleanup target for the whole repository; removes the shared schema
 # archive and extracted .proto files from the repo root.
@@ -58,15 +58,16 @@ $(PROTO_ROOT): $(FOXGLOVE_TARBALL)
 # every .proto under $(PROTO_ROOT) is compiled.
 SRCS := $(shell find $(PROTO_ROOT) -name '*.proto' 2>/dev/null)
 
-# Map each .proto file to its Go import path. The proto import path is the
-# path under $(PROTO_ROOT); the Go package suffix is the file's directory under
-# $(PROTO_ROOT), so the Makefile never hardcodes the upstream schema vendor
-# name (e.g. foxglove/). For a proto directly under $(PROTO_ROOT) the suffix
-# becomes empty, yielding the module's build/proto package.
-proto_to_go_pkg = $(GO_MODULE_PATH)/build/proto/$(patsubst ./%,%,$(patsubst %/,%,$(dir $(1))))
+# Build --go_opt flags by joining per-proto pieces. Splitting the work into
+# small named lists is much easier to follow than a single nested expression.
+PROTO_RELPATHS := $(patsubst $(PROTO_ROOT)/%,%,$(SRCS))
+PROTO_RELDIRS  := $(patsubst %/,%,$(dir $(PROTO_RELPATHS)))
+GO_PKG_SUFFIX  := $(patsubst ./%,%,$(PROTO_RELDIRS))
+GO_PKG_PATHS   := $(addprefix $(GO_MODULE_PATH)/proto/,$(GO_PKG_SUFFIX))
 
-GO_OPTS := $(foreach src,$(SRCS),\
-	--go_opt=M$(patsubst $(PROTO_ROOT)/%,%,$(src))=$(call proto_to_go_pkg,$(patsubst $(PROTO_ROOT)/%,%,$(src))))
+PROTOC_GO_OPTS := $(join \
+	$(addprefix --go_opt=M,$(PROTO_RELPATHS)),\
+	$(addprefix =,$(GO_PKG_PATHS)))
 
 # Sentinel that records the last successful protoc invocation. protoc produces
 # many outputs from many inputs, so a single sentinel avoids rebuilding
@@ -82,7 +83,7 @@ $(PROTOC_SENTINEL): $(SRCS)
 		--proto_path=$(PROTO_ROOT) \
 		--go_out=$(GEN_DIR) \
 		--go_opt=paths=source_relative \
-		$(GO_OPTS) \
+		$(PROTOC_GO_OPTS) \
 		$(SRCS)
 	@touch $@
 
