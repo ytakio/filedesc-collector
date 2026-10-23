@@ -1,9 +1,11 @@
 .PHONY: all build run clean clean-all protoc
 
-OUTPUT := output.mcap
+EXAMPLE_DIR := example/mcapwriter
+OUTPUT := $(EXAMPLE_DIR)/output.mcap
 
-# Repo-root directory (this example is at python/example/mcapwriter).
-REPO_ROOT := ../../..
+# Repo-root directory (this Makefile is at python/). This example is at
+# python/example/mcapwriter.
+REPO_ROOT := ..
 
 # Shared proto archive and directory used by the C++ and Go examples.
 # Python uses the foxglove-sdk package and does not generate bindings, but
@@ -17,7 +19,7 @@ build: protoc
 	@echo "Python example uses foxglove-sdk packages; no build step required."
 
 run:
-	python main.py
+	cd $(EXAMPLE_DIR) && python main.py
 
 clean:
 	rm -f $(OUTPUT)

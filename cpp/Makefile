@@ -1,11 +1,13 @@
 .PHONY: all build run clean protoc
 
+EXAMPLE_DIR := example/mcapwriter
 BINARY := mcapwriter
 OUTPUT := output.mcap
-BUILD_DIR := build
+BUILD_DIR := $(EXAMPLE_DIR)/build
 
-# Repo-root directory (this example is at cpp/example/mcapwriter).
-REPO_ROOT := ../../..
+# Repo-root directory (this Makefile is at cpp/). This example is at
+# cpp/example/mcapwriter.
+REPO_ROOT := ..
 
 # Foxglove SDK release tag from which to download protobuf schemas.
 FOXGLOVE_TAG := sdk/v0.30.2
@@ -17,7 +19,7 @@ PROTO_ROOT := $(REPO_ROOT)/proto
 PROTO_DIR := $(PROTO_ROOT)/foxglove
 
 # Directory where generated C++ protobuf bindings are emitted.
-GEN_DIR := ../../proto
+GEN_DIR := proto
 
 all: build
 
@@ -39,12 +41,12 @@ clean-all: clean
 	rm -rf $(PROTO_ROOT) $(FOXGLOVE_TARBALL)
 
 # Extract upstream .proto files into the repo-root proto/ directory, then
-# generate C++ bindings into proto/foxglove/ under this example. Because a
-# single protoc invocation produces every output, use a stamp file to avoid
-# re-running whenever an individual generated file is older than its source.
-# The stamp depends on the tarball (a stable file) and uses $(PROTO_DIR) as an
-# order-only prerequisite so the directory is created without its mtime
-# triggering rebuilds.
+# generate C++ bindings into cpp/proto/foxglove/. Because a single protoc
+# invocation produces every output, use a stamp file to avoid re-running
+# whenever an individual generated file is older than its source. The stamp
+# depends on the tarball (a stable file) and uses $(PROTO_DIR) as an order-only
+# prerequisite so the directory is created without its mtime triggering
+# rebuilds.
 protoc: $(GEN_DIR)/.stamp
 
 $(GEN_DIR)/.stamp: $(FOXGLOVE_TARBALL) | $(PROTO_DIR)

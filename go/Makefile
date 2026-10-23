@@ -1,10 +1,12 @@
 .PHONY: all build run clean protoc pbgo
 
-OUT_DIR := bin
-OUTPUT := output.mcap
+EXAMPLE_DIR := example/mcapwriter
+OUT_DIR := $(EXAMPLE_DIR)/bin
+OUTPUT := $(EXAMPLE_DIR)/output.mcap
 
-# Repo-root directory (this example is at go/example/mcapwriter).
-REPO_ROOT := ../../..
+# Repo-root directory (this Makefile is at go/). This example is at
+# go/example/mcapwriter.
+REPO_ROOT := ..
 
 # Foxglove SDK release tag from which to download protobuf schemas.
 FOXGLOVE_TAG := sdk/v0.30.2
@@ -16,10 +18,10 @@ PROTO_ROOT := $(REPO_ROOT)/proto
 PROTO_DIR := $(PROTO_ROOT)/foxglove
 
 # Directory where generated Go protobuf bindings are emitted.
-GEN_DIR := ../../proto
+GEN_DIR := proto
 
 # protoc-gen-go is declared as a Go tool in go.mod; resolve its path lazily.
-PROTOC_GEN_GO = $(shell go tool -n protoc-gen-go)
+PROTOC_GEN_GO = $(shell cd $(EXAMPLE_DIR) && go tool -n protoc-gen-go)
 
 # Go import path for the generated foxglove protobuf package.
 GO_PROTO_PACKAGE := github.com/ytakio/filedesc-collector/go/proto/foxglove
@@ -27,10 +29,10 @@ GO_PROTO_PACKAGE := github.com/ytakio/filedesc-collector/go/proto/foxglove
 all: build
 
 build: protoc
-	go build -o $(OUT_DIR)/ .
+	cd $(EXAMPLE_DIR) && go build -o bin/ .
 
 run: protoc
-	go run .
+	cd $(EXAMPLE_DIR) && go run .
 
 clean:
 	rm -rf $(OUT_DIR) $(OUTPUT)

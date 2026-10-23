@@ -13,7 +13,7 @@ This mirrors the Go and Python `mcapwriter` examples.
 ## Build
 
 ```bash
-cd cpp/example/mcapwriter
+cd cpp
 make build
 ```
 
@@ -64,8 +64,8 @@ sudo apt-get install cmake libprotobuf-dev protobuf-compiler libabsl-dev \
 make clean
 ```
 
-This removes the build directory and the generated `proto/` directory under
-this example.
+This removes the build directory under the example and the generated `proto/`
+directory under `cpp/`.
 
 To also remove the shared schema archive and extracted `.proto` files from the
 repository root, run:
