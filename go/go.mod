@@ -1,10 +1,9 @@
-module github.com/ytakio/filedesc-collector/go/example/mcapwriter
+module github.com/ytakio/filedesc-collector/go
 
 go 1.27
 
 require (
 	github.com/foxglove/mcap/go/mcap v1.5.0
-	github.com/ytakio/filedesc-collector v0.0.0
 	google.golang.org/protobuf v1.36.12
 )
 
@@ -19,8 +18,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/ytakio/filedesc-collector => ../../..
-
-tool (
-	google.golang.org/protobuf/cmd/protoc-gen-go
-)
+tool google.golang.org/protobuf/cmd/protoc-gen-go
