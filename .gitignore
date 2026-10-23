@@ -1,7 +1,8 @@
 build/
+bin/
 __pycache__/
-go.work.sum
 proto/
+go.work.sum
 *.pb.go
 *.mcap
 *.tar.gz

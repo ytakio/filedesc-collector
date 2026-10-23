@@ -1,6 +1,6 @@
 .PHONY: all build run clean protoc
 
-BINARY := mcapwriter
+OUT_DIR := bin
 OUTPUT := output.mcap
 
 # Foxglove SDK release tag from which to download protobuf schemas.
@@ -17,13 +17,13 @@ PROTOC_GEN_GO = $(shell go tool -n protoc-gen-go)
 all: build
 
 build: protoc
-	go build -o $(BINARY) .
+	go build -o $(OUT_DIR)/ .
 
 run: protoc
 	go run .
 
 clean:
-	rm -f $(BINARY) $(OUTPUT)
+	rm -rf $(OUT_DIR) $(OUTPUT)
 	rm -rf $(PROTO_DIR)
 
 # Extract .proto files first, then let a sub-make see them via wildcard.
