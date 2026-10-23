@@ -56,11 +56,11 @@ $(PROTO_ROOT): $(FOXGLOVE_TARBALL)
 # Proto sources are discovered after extraction so that the Makefile can be
 # re-read once the schema directory exists. No subdirectory is hardcoded;
 # every .proto under $(PROTO_ROOT) is compiled.
-SRCS := $(shell find $(PROTO_ROOT) -name '*.proto' 2>/dev/null)
+PROTO_SRCS := $(shell find $(PROTO_ROOT) -name '*.proto' 2>/dev/null)
 
 # Build --go_opt flags by joining per-proto pieces. Splitting the work into
 # small named lists is much easier to follow than a single nested expression.
-PROTO_RELPATHS := $(patsubst $(PROTO_ROOT)/%,%,$(SRCS))
+PROTO_RELPATHS := $(patsubst $(PROTO_ROOT)/%,%,$(PROTO_SRCS))
 PROTO_RELDIRS  := $(patsubst %/,%,$(dir $(PROTO_RELPATHS)))
 GO_PKG_SUFFIX  := $(patsubst ./%,%,$(PROTO_RELDIRS))
 GO_PKG_PATHS   := $(addprefix $(GO_MODULE_PATH)/proto/,$(GO_PKG_SUFFIX))
@@ -69,14 +69,14 @@ PROTOC_GO_OPTS := $(join \
 	$(addprefix --go_opt=M,$(PROTO_RELPATHS)),\
 	$(addprefix =,$(GO_PKG_PATHS)))
 
-# Sentinel that records the last successful protoc invocation. protoc produces
-# many outputs from many inputs, so a single sentinel avoids rebuilding
-# whenever any individual .pb.go is older than its source.
-PROTOC_SENTINEL := $(GEN_DIR)/protoc-go.done
+# Generated .pb.go files, one per proto source. All are produced by a single
+# protoc invocation because the --go_opt=M mappings depend on the full set of
+# inputs.
+GO_SRCS := $(patsubst $(PROTO_ROOT)/%.proto,$(GEN_DIR)/%.pb.go,$(PROTO_SRCS))
 
-pbgo: $(PROTOC_SENTINEL)
+pbgo: $(GO_SRCS)
 
-$(PROTOC_SENTINEL): $(SRCS)
+$(GO_SRCS): $(PROTO_SRCS)
 	@mkdir -p $(GEN_DIR)
 	protoc \
 		--plugin=protoc-gen-go=$(PROTOC_GEN_GO) \
@@ -84,8 +84,7 @@ $(PROTOC_SENTINEL): $(SRCS)
 		--go_out=$(GEN_DIR) \
 		--go_opt=paths=source_relative \
 		$(PROTOC_GO_OPTS) \
-		$(SRCS)
-	@touch $@
+		$(PROTO_SRCS)
 
 $(FOXGLOVE_TARBALL):
 	curl -sL -o $@ $(FOXGLOVE_URL)
