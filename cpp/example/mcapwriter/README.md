@@ -18,7 +18,7 @@ make build
 ```
 
 This downloads the Foxglove SDK protobuf schemas, extracts them into `proto/`
-at the repository root, generates C++ protobuf bindings into `cpp/build/proto/`,
+at the repository root, generates C++ protobuf bindings into `cpp/proto/`,
 and then builds the example with CMake under `cpp/build/example/mcapwriter/`.
 
 ## Run
@@ -64,7 +64,7 @@ sudo apt-get install cmake libprotobuf-dev protobuf-compiler libabsl-dev \
 make clean
 ```
 
-This removes the generated `build/` directory under `cpp/`.
+This removes the generated `build/` and `proto/` directories under `cpp/`.
 
 To also remove the shared schema archive and extracted `.proto` files from the
 repository root, run:

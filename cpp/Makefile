@@ -1,9 +1,6 @@
-.PHONY: all build run clean protoc pbgen
+.PHONY: all example test clean clean-all protoc pbcpp
 
 EXAMPLE_DIR := example/mcapwriter
-BINARY := mcapwriter
-BUILD_DIR := build/example/mcapwriter
-OUTPUT := $(BUILD_DIR)/output.mcap
 
 # Repo-root directory (this Makefile is at cpp/). This example is at
 # cpp/example/mcapwriter.
@@ -17,36 +14,38 @@ FOXGLOVE_URL := https://github.com/foxglove/foxglove-sdk/archive/refs/tags/$(FOX
 # Repo-root directory where upstream .proto schemas are extracted.
 PROTO_ROOT := $(REPO_ROOT)/proto
 
-# Directory where generated C++ protobuf bindings are emitted.
-GEN_DIR := build/proto
+# Directory under cpp/ where generated C++ protobuf bindings are emitted.
+GEN_DIR := proto
 
-all: build
+# Build directory and binary name for the C++ example.
+BUILD_DIR := build/example/mcapwriter
+EXAMPLE_BINARY := mcapwriter
+EXAMPLE_OUTPUT := $(BUILD_DIR)/output.mcap
 
-build: protoc
+all: test
+
+test:
+	cmake -B build -S . -DBUILD_EXAMPLES=OFF
+	cmake --build build
+	ctest --test-dir build --output-on-failure
+
+example: protoc
 	cmake -B $(BUILD_DIR) -S $(EXAMPLE_DIR)
 	cmake --build $(BUILD_DIR)
-
-run: build
-	@rm -f $(OUTPUT)
-	cd $(BUILD_DIR) && ./$(BINARY)
+	@rm -f $(EXAMPLE_OUTPUT)
+	./$(BUILD_DIR)/$(EXAMPLE_BINARY)
 
 clean:
-	rm -rf build
+	rm -rf $(GEN_DIR) build
 
 # Shared cleanup target for the whole repository; removes the shared schema
 # archive and extracted .proto files from the repo root.
 clean-all: clean
 	rm -rf $(PROTO_ROOT) $(FOXGLOVE_TARBALL)
 
-# Extract upstream .proto files into the repo-root proto/ directory, then
-# generate C++ bindings into cpp/build/proto/. Because a single protoc
-# invocation produces every output, use a stamp file to avoid re-running
-# whenever an individual generated file is older than its source. The stamp
-# depends on the tarball (a stable file) and uses $(PROTO_ROOT) as an
-# order-only prerequisite so the directory is created without its mtime
-# triggering rebuilds.
+# Extract .proto files first, then let a sub-make see them via wildcard.
 protoc: | $(PROTO_ROOT)
-	$(MAKE) pbgen
+	$(MAKE) pbcpp
 
 $(PROTO_ROOT): $(FOXGLOVE_TARBALL)
 	@mkdir -p $(PROTO_ROOT)
@@ -55,16 +54,17 @@ $(PROTO_ROOT): $(FOXGLOVE_TARBALL)
 # Proto sources are discovered after extraction so that the Makefile can be
 # re-read once the schema directory exists. No subdirectory is hardcoded;
 # every .proto under $(PROTO_ROOT) is compiled.
-SRCS := $(shell find $(PROTO_ROOT) -name '*.proto' 2>/dev/null)
+PROTO_SRCS := $(shell find $(PROTO_ROOT) -name '*.proto' 2>/dev/null)
 
-PROTOC_SENTINEL := $(GEN_DIR)/protoc-cpp.done
+# Generated C++ protobuf sources, one per proto source. All are produced by a
+# single protoc invocation.
+CPP_SRCS := $(patsubst $(PROTO_ROOT)/%.proto,$(GEN_DIR)/%.pb.cc,$(PROTO_SRCS))
 
-pbgen: $(PROTOC_SENTINEL)
+pbcpp: $(CPP_SRCS)
 
-$(PROTOC_SENTINEL): $(SRCS)
+$(CPP_SRCS): $(PROTO_SRCS)
 	@mkdir -p $(GEN_DIR)
-	protoc --proto_path=$(PROTO_ROOT) --cpp_out=$(GEN_DIR) $(SRCS)
-	@touch $@
+	protoc --proto_path=$(PROTO_ROOT) --cpp_out=$(GEN_DIR) $(PROTO_SRCS)
 
 $(FOXGLOVE_TARBALL):
 	curl -sL -o $@ $(FOXGLOVE_URL)
