@@ -15,7 +15,7 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["filedesc", "filedesc.proto", "filedesc.proto.foxglove"]
+packages = ["filedesc", "proto", "proto.foxglove"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -15,9 +15,7 @@ FOXGLOVE_URL := https://github.com/foxglove/foxglove-sdk/archive/refs/tags/$(FOX
 PROTO_ROOT := $(REPO_ROOT)/proto
 
 # Directory under python/ where generated Python protobuf bindings are emitted.
-# Placed inside the filedesc package so the bindings are importable after
-# installing the package without extra PYTHONPATH setup.
-GEN_DIR := filedesc/proto
+GEN_DIR := proto
 
 all: test
 
@@ -28,7 +26,7 @@ example: protoc
 	uv run python $(EXAMPLE_DIR)/main.py
 
 clean:
-	find $(GEN_DIR) -name '*_pb2.py' -delete
+	rm -rf $(GEN_DIR)
 
 # Shared cleanup target for the whole repository; removes the shared schema
 # archive and extracted .proto files from the repo root.
