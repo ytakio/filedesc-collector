@@ -1,3 +1,11 @@
+---
+If:
+  PathMatch: example/mcapwriter/.*
+CompileFlags:
+  CompilationDatabase: build/example/mcapwriter
+---
+If:
+  PathMatch: tests/
 CompileFlags:
   CompilationDatabase: build
 
