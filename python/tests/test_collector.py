@@ -1,3 +1,10 @@
+"""Tests for FileDescriptorSetCollector.
+
+These tests verify that the collector returns the target file descriptor and
+its transitive dependencies in topological order, deduplicates files within a
+single collection, and rejects nil input.
+"""
+
 from google.protobuf.descriptor_pb2 import FileDescriptorProto, FileDescriptorSet
 from google.protobuf.duration_pb2 import Duration
 from google.protobuf.timestamp_pb2 import Timestamp

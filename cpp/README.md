@@ -88,8 +88,17 @@ To build only the library and tests without examples:
 ```bash
 cd cpp
 cmake -B build -S . -DBUILD_EXAMPLES=OFF
-make
-ctest
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+To install the library system-wide:
+
+```bash
+cd cpp
+cmake -B build -S . -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF
+cmake --build build
+cmake --install build
 ```
 
 ## Usage

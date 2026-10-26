@@ -19,6 +19,23 @@ target_include_directories(filedesc
 
 target_link_libraries(filedesc INTERFACE protobuf::libprotobuf)
 
+# Install rules so the library can be consumed via find_package(filedesc).
+include(GNUInstallDirs)
+
+install(TARGETS filedesc
+    EXPORT filedesc-targets
+)
+
+install(EXPORT filedesc-targets
+    FILE filedesc-config.cmake
+    NAMESPACE filedesc::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/filedesc
+)
+
+install(DIRECTORY include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
 option(BUILD_TESTING "Build tests" ON)
 if(BUILD_TESTING)
     find_package(GTest)

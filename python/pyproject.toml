@@ -3,20 +3,13 @@ name = "filedesc-collector"
 version = "0.1.0"
 description = "Collect FileDescriptorSets including transitive dependencies"
 requires-python = ">=3.10"
-dependencies = [
-    "mcap>=1.6",
-    "protobuf>=5.0",
-]
+dependencies = ["mcap>=1.6", "protobuf>=5.0"]
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=8.0",
-    "mcap>=1.6",
-]
-
-[tool.setuptools]
-packages = ["filedesc", "proto", "proto.foxglove"]
+dev = ["pytest>=8.0"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
+[tool.setuptools]
+packages = ["filedesc", "proto", "proto.foxglove"]

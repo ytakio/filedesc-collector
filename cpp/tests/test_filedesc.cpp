@@ -1,8 +1,12 @@
-#include <gtest/gtest.h>
-
+// Tests for filedesc::FileDescriptorSetCollector.
+//
+// These tests verify that the collector returns the target file descriptor and
+// its transitive dependencies in topological order, deduplicates files within a
+// single collection, and rejects null input.
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/duration.pb.h>
 #include <google/protobuf/timestamp.pb.h>
+#include <gtest/gtest.h>
 
 #include "filedesc/filedesc.hpp"
 
@@ -15,11 +19,11 @@ using google::protobuf::Timestamp;
 
 namespace filedesc {
 
-static auto FileNames(const std::vector<FileDescriptorProto> &protos)
+static auto FileNames(const std::vector<FileDescriptorProto>& protos)
     -> std::vector<std::string> {
   auto names = std::vector<std::string>{};
   names.reserve(protos.size());
-  for (const auto &p : protos) {
+  for (const auto& p : protos) {
     names.push_back(p.name());
   }
   return names;
@@ -66,15 +70,15 @@ TEST(FileDescriptorSetCollector, DoesNotDuplicate) {
 TEST(FileDescriptorSetCollector, RejectsNullMessage) {
   auto collector = FileDescriptorSetCollector{};
   auto protos =
-      collector.CollectForMessage(static_cast<const Descriptor *>(nullptr));
+      collector.CollectForMessage(static_cast<const Descriptor*>(nullptr));
   EXPECT_FALSE(protos.has_value());
 }
 
 TEST(FileDescriptorSetCollector, RejectsNullDescriptor) {
   auto collector = FileDescriptorSetCollector{};
   auto protos = collector.CollectForDescriptor(
-      static_cast<const FileDescriptor *>(nullptr));
+      static_cast<const FileDescriptor*>(nullptr));
   EXPECT_FALSE(protos.has_value());
 }
 
-} // namespace filedesc
+}  // namespace filedesc

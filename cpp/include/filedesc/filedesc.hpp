@@ -13,27 +13,30 @@ namespace filedesc {
 // Collects FileDescriptorProto messages including transitive dependencies.
 // This class is header-only so it can be used without compiling a separate
 // library.
+//
+// A collector can be reused for multiple independent collections; its internal
+// state is reset at the beginning of each collection. Passing a null descriptor
+// returns std::nullopt.
 class FileDescriptorSetCollector final {
-public:
+ public:
   using Proto = google::protobuf::FileDescriptorProto;
   using Protos = std::vector<Proto>;
   using OptionalProtos = std::optional<Protos>;
 
   FileDescriptorSetCollector() = default;
 
-  // This class is stateless; copying or moving it is meaningless.
-  FileDescriptorSetCollector(const FileDescriptorSetCollector &) = delete;
-  FileDescriptorSetCollector &
-  operator=(const FileDescriptorSetCollector &) = delete;
-  FileDescriptorSetCollector(FileDescriptorSetCollector &&) = delete;
-  FileDescriptorSetCollector &operator=(FileDescriptorSetCollector &&) = delete;
+  // The collector is stateless; default copy/move are safe and convenient.
+  FileDescriptorSetCollector(const FileDescriptorSetCollector&) = default;
+  FileDescriptorSetCollector& operator=(const FileDescriptorSetCollector&) =
+      default;
+  FileDescriptorSetCollector(FileDescriptorSetCollector&&) = default;
+  FileDescriptorSetCollector& operator=(FileDescriptorSetCollector&&) = default;
 
   // Return FileDescriptorProtos for the file containing ``descriptor`` and its
   // deps. Returns std::nullopt if ``descriptor`` is null.
   [[nodiscard]]
-  auto CollectForMessage(const google::protobuf::Descriptor *descriptor) const
+  auto CollectForMessage(const google::protobuf::Descriptor* descriptor) const
       -> OptionalProtos {
-
     if (!descriptor) {
       return std::nullopt;
     }
@@ -45,20 +48,20 @@ public:
   // Returns std::nullopt if ``file_descriptor`` is null.
   [[nodiscard]]
   auto CollectForDescriptor(
-      const google::protobuf::FileDescriptor *file_descriptor) const
+      const google::protobuf::FileDescriptor* file_descriptor) const
       -> OptionalProtos {
-
     if (!file_descriptor) {
       return std::nullopt;
     }
 
-    // FileDescriptor names are owned by the protobuf descriptor pool, which has
-    // program lifetime, so string_view keys are safe.
+    // FileDescriptor names are owned by the protobuf descriptor pool, which
+    // outlives this function call (and typically the program), so string_view
+    // keys are safe here.
     std::unordered_set<std::string_view> seen;
 
     auto collectFile =
-        [&seen](const auto &self,
-                const google::protobuf::FileDescriptor *fd) -> OptionalProtos {
+        [&seen](const auto& self,
+                const google::protobuf::FileDescriptor* fd) -> OptionalProtos {
       if (!fd) {
         return std::nullopt;
       }
@@ -93,4 +96,4 @@ public:
   }
 };
 
-} // namespace filedesc
+}  // namespace filedesc

@@ -87,6 +87,9 @@ cd python
 uv pip install -e '.[dev]'
 ```
 
+The `proto/` package used by the example is generated at build time; it is not
+required for the core library or tests.
+
 ### Usage
 
 ```python
@@ -185,6 +188,19 @@ the file.
 - [`go/example/mcapwriter`](go/example/mcapwriter) — Go example using the
   Foxglove MCAP Go SDK and generated Foxglove protobuf bindings. Run
   `make example` from `go/` to produce `go/output.mcap`.
+
+## Repository layout
+
+```
+.
+├── go/              # Go library and example
+├── python/          # Python library and example
+├── cpp/             # C++ header-only library and example
+├── .github/         # GitHub Actions CI workflows
+├── Makefile         # Top-level orchestration for all languages
+├── LICENSE          # MIT License
+└── README.md
+```
 
 ## Notes
 

@@ -1,3 +1,8 @@
+// Package filedesc_test contains tests for filedesc.FileDescriptorSetCollector.
+//
+// These tests verify that the collector returns the target file descriptor and
+// its transitive dependencies in topological order, deduplicates files within a
+// single collection, and rejects nil input.
 package filedesc
 
 import (
@@ -32,7 +37,8 @@ func TestCollectForMessage(t *testing.T) {
 }
 
 func TestCollectForMessageWithDependency(t *testing.T) {
-	// anypb.Any depends on google/protobuf/any.proto only (no other well-known deps).
+	// anypb.Any is defined in google/protobuf/any.proto and has no transitive
+	// file dependencies, so the result should contain exactly that file.
 	protos, err := NewCollector().CollectForMessage((*anypb.Any)(nil).ProtoReflect())
 	if err != nil {
 		t.Fatalf("CollectForMessage failed: %v", err)

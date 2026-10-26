@@ -1,4 +1,9 @@
-// Package filedesc provides utilities for working with protobuf descriptors, including collecting FileDescriptorSets for messages and file descriptors.
+// Package filedesc provides utilities for working with protobuf descriptors,
+// including collecting FileDescriptorSets for messages and file descriptors.
+//
+// A FileDescriptorSetCollector collects FileDescriptorProtos including
+// transitive dependencies. Each collection is independent: the collector can be
+// reused, and nil inputs result in an error.
 package filedesc
 
 import (

@@ -14,7 +14,8 @@ class FileDescriptorSetCollector:
     """Collects FileDescriptorProto messages including dependencies.
 
     A collector can be reused for multiple independent collections; its
-    internal state is reset at the beginning of each collection.
+    internal state is reset at the beginning of each collection. Passing
+    ``None`` raises ``ValueError``.
     """
 
     def collect_for_message(self, descriptor: Descriptor) -> list[FileDescriptorProto]:

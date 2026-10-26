@@ -215,6 +215,8 @@ std::optional<std::string> Run() {
     }
   }
 
+  // The MCAP writer's close() returns void; errors during close are
+  // reported by the destructor.
   writer.close();
   return std::nullopt;
 }

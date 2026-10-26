@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+      - name: Install protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          version: "30.2"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run Go tests
+        working-directory: go
+        run: make test
+      - name: Run Go example
+        working-directory: go
+        run: make example
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+      - name: Install protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          version: "30.2"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run Python tests
+        working-directory: python
+        run: make test
+      - name: Run Python example
+        working-directory: python
+        run: make example
+
+  cpp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake protobuf-compiler libprotobuf-dev \
+            libabsl-dev libgtest-dev liblz4-dev libzstd-dev pkg-config
+      - name: Run C++ tests
+        working-directory: cpp
+        run: make test
+      - name: Run C++ example
+        working-directory: cpp
+        run: make example
