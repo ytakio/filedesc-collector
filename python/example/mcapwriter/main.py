@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -6,10 +7,7 @@ from google.protobuf.descriptor import Descriptor
 from google.protobuf.descriptor_pb2 import FileDescriptorSet
 from google.protobuf.message import Message
 from google.protobuf.timestamp_pb2 import Timestamp
-from mcap.well_known import MessageEncoding, SchemaEncoding
-from mcap.writer import Writer
 
-from filedesc import FileDescriptorSetCollector
 from proto.foxglove.Color_pb2 import Color
 from proto.foxglove.CubePrimitive_pb2 import CubePrimitive
 from proto.foxglove.Pose_pb2 import Pose
@@ -17,6 +15,10 @@ from proto.foxglove.Quaternion_pb2 import Quaternion
 from proto.foxglove.SceneEntity_pb2 import SceneEntity
 from proto.foxglove.SceneUpdate_pb2 import SceneUpdate
 from proto.foxglove.Vector3_pb2 import Vector3
+
+from mcap.well_known import MessageEncoding, SchemaEncoding
+from mcap.writer import Writer
+from filedesc import FileDescriptorSetCollector
 
 LIBRARY_NAME = "github.com/ytakio/filedesc-collector/mcapwriter example"
 SOURCE_METADATA = {"source": "mcapwriter example"}
@@ -30,59 +32,17 @@ class ChannelConfig:
 
     topic: str
     descriptor: Descriptor
-    populate: type[Message] | Message
-
-
-@dataclass(frozen=True, slots=True)
-class SchemaInfo:
-    """Arguments for Writer.register_schema."""
-
-    name: str
-    encoding: SchemaEncoding
-    data: bytes
-
-
-@dataclass(frozen=True, slots=True)
-class MessageInfo:
-    """Arguments for Writer.add_message."""
-
-    channel_id: int
-    log_time: int
-    publish_time: int
-    sequence: int
-    data: bytes
+    populate: Callable[[datetime, int], Message]
 
 
 def build_schema_data(descriptor: Descriptor) -> bytes:
     """Return a serialized FileDescriptorSet for *descriptor* and its deps."""
     collector = FileDescriptorSetCollector()
-    fd_set = FileDescriptorSet(file=collector.collect_for_message(descriptor))
+    fd_set = FileDescriptorSet(
+        file=collector.collect_for_message(descriptor),
+    )
+
     return fd_set.SerializeToString()
-
-
-def create_schema(descriptor: Descriptor) -> SchemaInfo:
-    """Create schema registration info for *descriptor*."""
-    return SchemaInfo(
-        name=descriptor.full_name,
-        encoding=SchemaEncoding.Protobuf,
-        data=build_schema_data(descriptor),
-    )
-
-
-def create_message(
-    channel_id: int,
-    sequence: int,
-    log_time: int,
-    msg: Message,
-) -> MessageInfo:
-    """Create message write info for *msg*."""
-    return MessageInfo(
-        channel_id=channel_id,
-        log_time=log_time,
-        publish_time=log_time,
-        sequence=sequence,
-        data=msg.SerializeToString(),
-    )
 
 
 def build_timestamp(t: datetime, _index: int) -> Timestamp:
@@ -136,11 +96,10 @@ def write_mcap(output_path: Path) -> None:
 
         channel_ids: list[int] = []
         for cfg in CHANNEL_CONFIGS:
-            schema_info = create_schema(cfg.descriptor)
             schema_id = writer.register_schema(
-                name=schema_info.name,
-                encoding=schema_info.encoding,
-                data=schema_info.data,
+                name=cfg.descriptor.full_name,
+                encoding=SchemaEncoding.Protobuf,
+                data=build_schema_data(cfg.descriptor),
             )
             channel_id = writer.register_channel(
                 topic=cfg.topic,
@@ -156,21 +115,19 @@ def write_mcap(output_path: Path) -> None:
             sequence = i + 1
 
             for channel_id, cfg in zip(channel_ids, CHANNEL_CONFIGS):
-                msg = cfg.populate(t, i)
-                message_info = create_message(channel_id, sequence, log_time_ns, msg)
                 writer.add_message(
-                    channel_id=message_info.channel_id,
-                    log_time=message_info.log_time,
-                    publish_time=message_info.publish_time,
-                    sequence=message_info.sequence,
-                    data=message_info.data,
+                    channel_id=channel_id,
+                    log_time=log_time_ns,
+                    publish_time=log_time_ns,
+                    sequence=sequence,
+                    data=cfg.populate(t, i).SerializeToString(),
                 )
 
         writer.finish()
 
 
 def main() -> int:
-    output_path = Path("output.mcap")
+    output_path = Path(__file__).with_name("output.mcap")
     write_mcap(output_path)
     print(f"Wrote {output_path}")
     return 0
