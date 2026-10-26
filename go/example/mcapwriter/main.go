@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/foxglove/mcap/go/mcap"
-	"github.com/ytakio/filedesc-collector/go/proto/foxglove"
 	"github.com/ytakio/filedesc-collector/go/filedesc"
+	"github.com/ytakio/filedesc-collector/go/proto/foxglove"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -133,7 +133,7 @@ func run() (err error) {
 
 	// Write 100 samples at 1 Hz, starting from a fixed epoch.
 	start := time.Date(2026, 10, 22, 9, 0, 0, 0, time.UTC)
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		t := start.Add(time.Duration(i) * time.Second)
 		nanos := uint64(t.UnixNano())
 
