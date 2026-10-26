@@ -131,8 +131,8 @@ func run() (err error) {
 		nextChannelID++
 	}
 
-	// Write 100 samples at 1 Hz, starting from a fixed epoch.
-	start := time.Date(2026, 10, 22, 9, 0, 0, 0, time.UTC)
+	// Write 100 samples at 1 Hz, starting from the current time.
+	start := time.Now().UTC()
 	for i := range 100 {
 		t := start.Add(time.Duration(i) * time.Second)
 		nanos := uint64(t.UnixNano())

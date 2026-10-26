@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from google.protobuf.descriptor import Descriptor
@@ -8,13 +8,7 @@ from google.protobuf.descriptor_pb2 import FileDescriptorSet
 from google.protobuf.message import Message
 from google.protobuf.timestamp_pb2 import Timestamp
 
-from proto.foxglove.Color_pb2 import Color
-from proto.foxglove.CubePrimitive_pb2 import CubePrimitive
-from proto.foxglove.Pose_pb2 import Pose
-from proto.foxglove.Quaternion_pb2 import Quaternion
-from proto.foxglove.SceneEntity_pb2 import SceneEntity
 from proto.foxglove.SceneUpdate_pb2 import SceneUpdate
-from proto.foxglove.Vector3_pb2 import Vector3
 
 from mcap.well_known import MessageEncoding, SchemaEncoding
 from mcap.writer import Writer
@@ -23,7 +17,7 @@ from filedesc import FileDescriptorSetCollector
 LIBRARY_NAME = "github.com/ytakio/filedesc-collector/mcapwriter example"
 SOURCE_METADATA = {"source": "mcapwriter example"}
 MESSAGE_COUNT = 100
-START_TIME = datetime.fromisoformat("2026-10-22T09:00:00+00:00")
+START_TIME = datetime.now(tz=timezone.utc)
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,24 +48,26 @@ def build_timestamp(t: datetime, _index: int) -> Timestamp:
 
 def build_scene_update(_t: datetime, index: int) -> SceneUpdate:
     """Build a foxglove.SceneUpdate sample."""
-    return SceneUpdate(
-        entities=[
-            SceneEntity(
-                id=f"entity-{index:02d}",
-                frame_id="base_link",
-                cubes=[
-                    CubePrimitive(
-                        pose=Pose(
-                            position=Vector3(x=float(index), y=0.0, z=0.0),
-                            orientation=Quaternion(x=0.0, y=0.0, z=0.0, w=1.0),
-                        ),
-                        size=Vector3(x=1.0, y=1.0, z=1.0),
-                        color=Color(r=1.0, g=0.5, b=0.0, a=1.0),
-                    )
-                ],
-            )
-        ]
-    )
+    scene = SceneUpdate()
+    entity = scene.entities.add()
+    entity.id = f"entity-{index:02d}"
+    entity.frame_id = "base_link"
+    cube = entity.cubes.add()
+    cube.pose.position.x = float(index)
+    cube.pose.position.y = 0.0
+    cube.pose.position.z = 0.0
+    cube.pose.orientation.x = 0.0
+    cube.pose.orientation.y = 0.0
+    cube.pose.orientation.z = 0.0
+    cube.pose.orientation.w = 1.0
+    cube.size.x = 1.0
+    cube.size.y = 1.0
+    cube.size.z = 1.0
+    cube.color.r = 1.0
+    cube.color.g = 0.5
+    cube.color.b = 0.0
+    cube.color.a = 1.0
+    return scene
 
 
 CHANNEL_CONFIGS = [

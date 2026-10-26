@@ -25,34 +25,6 @@ namespace gp = google::protobuf;
 
 namespace {
 
-// Helpers that build and return small foxglove protobuf messages by value.
-// They can be assigned directly into a mutable sub-message slot.
-foxglove::Vector3 MakeVector3(double x, double y, double z) {
-  foxglove::Vector3 v{};
-  v.set_x(x);
-  v.set_y(y);
-  v.set_z(z);
-  return v;
-}
-
-foxglove::Quaternion MakeQuaternion(double x, double y, double z, double w) {
-  foxglove::Quaternion q{};
-  q.set_x(x);
-  q.set_y(y);
-  q.set_z(z);
-  q.set_w(w);
-  return q;
-}
-
-foxglove::Color MakeColor(double r, double g, double b, double a) {
-  foxglove::Color c{};
-  c.set_r(r);
-  c.set_g(g);
-  c.set_b(b);
-  c.set_a(a);
-  return c;
-}
-
 // channelConfig describes one channel to write: its topic, the protobuf
 // descriptor used for its schema, and a populate function that builds each
 // sample.
@@ -98,11 +70,28 @@ const std::vector<ChannelConfig> channel_configs = {
 
           auto* cube = entity->add_cubes();
           auto* pose = cube->mutable_pose();
-          *pose->mutable_position() =
-              MakeVector3(static_cast<double>(i), 0.0, 0.0);
-          *pose->mutable_orientation() = MakeQuaternion(0.0, 0.0, 0.0, 1.0);
-          *cube->mutable_size() = MakeVector3(1.0, 1.0, 1.0);
-          *cube->mutable_color() = MakeColor(1.0, 0.5, 0.0, 1.0);
+
+          auto* position = pose->mutable_position();
+          position->set_x(static_cast<double>(i));
+          position->set_y(0.0);
+          position->set_z(0.0);
+
+          auto* orientation = pose->mutable_orientation();
+          orientation->set_x(0.0);
+          orientation->set_y(0.0);
+          orientation->set_z(0.0);
+          orientation->set_w(1.0);
+
+          auto* size = cube->mutable_size();
+          size->set_x(1.0);
+          size->set_y(1.0);
+          size->set_z(1.0);
+
+          auto* color = cube->mutable_color();
+          color->set_r(1.0);
+          color->set_g(0.5);
+          color->set_b(0.0);
+          color->set_a(1.0);
 
           return scene_update;
         },
@@ -199,9 +188,8 @@ std::optional<std::string> Run() {
     next_channel_id++;
   }
 
-  // Use a fixed epoch: 2026-10-22 09:00:00 UTC.
-  const auto start_time = std::chrono::system_clock::time_point(
-      std::chrono::seconds(1'796'625'600));
+  // Use the current time as the start epoch.
+  const auto start_time = std::chrono::system_clock::now();
 
   // Write 100 samples at 1 Hz.
   for (int i = 0; i < 100; ++i) {
