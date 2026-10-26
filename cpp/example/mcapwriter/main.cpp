@@ -58,9 +58,9 @@ foxglove::Color MakeColor(double r, double g, double b, double a) {
 // sample.
 struct ChannelConfig {
   std::string topic;
-  const gp::Descriptor *descriptor;
+  const gp::Descriptor* descriptor;
   std::function<std::unique_ptr<gp::Message>(
-      const std::chrono::system_clock::time_point &t, int i)>
+      const std::chrono::system_clock::time_point& t, int i)>
       populate;
 };
 
@@ -70,7 +70,7 @@ const std::vector<ChannelConfig> channel_configs = {
     {
         "/timestamp",
         gp::Timestamp::descriptor(),
-        [](const std::chrono::system_clock::time_point &t, int /*i*/) {
+        [](const std::chrono::system_clock::time_point& t, int /*i*/) {
           auto timestamp = std::make_unique<gp::Timestamp>();
           const auto since_epoch = t.time_since_epoch();
           const auto seconds =
@@ -86,9 +86,9 @@ const std::vector<ChannelConfig> channel_configs = {
     {
         "/sensor/dummy",
         foxglove::SceneUpdate::descriptor(),
-        [](const std::chrono::system_clock::time_point & /*t*/, int i) {
+        [](const std::chrono::system_clock::time_point& /*t*/, int i) {
           auto scene_update = std::make_unique<foxglove::SceneUpdate>();
-          auto *entity = scene_update->add_entities();
+          auto* entity = scene_update->add_entities();
 
           char entity_id[32];
           std::snprintf(entity_id, sizeof(entity_id), "entity-%02d", i);
@@ -96,8 +96,8 @@ const std::vector<ChannelConfig> channel_configs = {
 
           entity->set_frame_id("base_link");
 
-          auto *cube = entity->add_cubes();
-          auto *pose = cube->mutable_pose();
+          auto* cube = entity->add_cubes();
+          auto* pose = cube->mutable_pose();
           *pose->mutable_position() =
               MakeVector3(static_cast<double>(i), 0.0, 0.0);
           *pose->mutable_orientation() = MakeQuaternion(0.0, 0.0, 0.0, 1.0);
@@ -112,7 +112,7 @@ const std::vector<ChannelConfig> channel_configs = {
 // Create an MCAP schema from a protobuf descriptor, assigning the given ID.
 // Returns std::nullopt on failure.
 std::optional<mcap::Schema> CreateSchema(uint16_t id,
-                                         const gp::Descriptor *descriptor) {
+                                         const gp::Descriptor* descriptor) {
   filedesc::FileDescriptorSetCollector collector;
   auto protos = collector.CollectForMessage(descriptor);
   if (!protos.has_value()) {
@@ -120,7 +120,7 @@ std::optional<mcap::Schema> CreateSchema(uint16_t id,
   }
 
   gp::FileDescriptorSet fd_set{};
-  for (auto &proto : protos.value()) {
+  for (auto& proto : protos.value()) {
     *fd_set.add_file() = std::move(proto);
   }
 
@@ -148,7 +148,7 @@ struct MessageWithData {
 std::optional<MessageWithData> CreateMessage(uint16_t channel_id,
                                              uint32_t sequence,
                                              uint64_t log_time_ns,
-                                             const gp::Message &msg) {
+                                             const gp::Message& msg) {
   MessageWithData result{};
   if (!msg.SerializeToString(&result.data)) {
     return std::nullopt;
@@ -158,7 +158,7 @@ std::optional<MessageWithData> CreateMessage(uint16_t channel_id,
   result.message.sequence = sequence;
   result.message.logTime = log_time_ns;
   result.message.publishTime = log_time_ns;
-  result.message.data = reinterpret_cast<const std::byte *>(result.data.data());
+  result.message.data = reinterpret_cast<const std::byte*>(result.data.data());
   result.message.dataSize = result.data.size();
   return result;
 }
@@ -183,7 +183,7 @@ std::optional<std::string> Run() {
   // Register schemas and channels from the channel_configs table.
   std::vector<uint16_t> channel_ids;
   channel_ids.reserve(channel_configs.size());
-  for (const auto &cfg : channel_configs) {
+  for (const auto& cfg : channel_configs) {
     auto schema = CreateSchema(next_schema_id, cfg.descriptor);
     if (!schema.has_value()) {
       return "create schema for " + cfg.topic;
@@ -212,7 +212,7 @@ std::optional<std::string> Run() {
             .count());
 
     for (size_t j = 0; j < channel_configs.size(); ++j) {
-      const auto &cfg = channel_configs[j];
+      const auto& cfg = channel_configs[j];
       auto msg = cfg.populate(t, i);
       auto m = CreateMessage(channel_ids[j], static_cast<uint32_t>(i + 1),
                              log_time_ns, *msg);
@@ -231,7 +231,7 @@ std::optional<std::string> Run() {
   return std::nullopt;
 }
 
-} // namespace
+}  // namespace
 
 int main() {
   if (auto err = Run(); err.has_value()) {
