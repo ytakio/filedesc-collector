@@ -11,8 +11,11 @@ FOXGLOVE_TAG := sdk/v0.30.2
 FOXGLOVE_TARBALL := $(REPO_ROOT)/foxglove-sdk.tar.gz
 FOXGLOVE_URL := https://github.com/foxglove/foxglove-sdk/archive/refs/tags/$(FOXGLOVE_TAG).tar.gz
 
-# Repo-root directory where upstream .proto schemas are extracted.
-PROTO_ROOT := $(REPO_ROOT)/proto
+# Directory where the upstream SDK source is extracted.
+FOXGLOVE_SDK_DIR := $(REPO_ROOT)/foxglove-sdk
+
+# Directory containing upstream .proto schemas.
+PROTO_ROOT := $(FOXGLOVE_SDK_DIR)/schemas/proto
 
 # Directory under python/ where generated Python protobuf bindings are emitted.
 GEN_DIR := proto
@@ -20,7 +23,7 @@ GEN_DIR := proto
 all: test
 
 test:
-	uv run pytest
+	uv run python -m pytest
 
 example: protoc
 	uv run python $(EXAMPLE_DIR)/main.py
@@ -28,18 +31,20 @@ example: protoc
 clean:
 	rm -rf $(GEN_DIR)
 
-# Shared cleanup target for the whole repository; removes the shared schema
-# archive and extracted .proto files from the repo root.
+# Shared cleanup target for the whole repository; removes the shared SDK
+# source tree and archive from the repo root.
 clean-all: clean
-	rm -rf $(PROTO_ROOT) $(FOXGLOVE_TARBALL)
+	rm -rf $(FOXGLOVE_SDK_DIR) $(FOXGLOVE_TARBALL)
 
-# Extract .proto files first, then let a sub-make see them via wildcard.
-protoc: | $(PROTO_ROOT)
+# Extract the SDK source tree first, then let a sub-make discover the proto
+# files via find. Using --strip-components=1 instead of a member pattern
+# works on both GNU tar and BSD tar.
+protoc: | $(FOXGLOVE_SDK_DIR)
 	$(MAKE) pbpy
 
-$(PROTO_ROOT): $(FOXGLOVE_TARBALL)
-	@mkdir -p $(PROTO_ROOT)
-	@tar xzf $< -C $(PROTO_ROOT) --wildcards --strip-components=3 '*/schemas/proto/*'
+$(FOXGLOVE_SDK_DIR): $(FOXGLOVE_TARBALL)
+	@mkdir -p $(FOXGLOVE_SDK_DIR)
+	@tar xzf $< -C $(FOXGLOVE_SDK_DIR) --strip-components=1
 
 # Proto sources are discovered after extraction so that the Makefile can be
 # re-read once the schema directory exists. No subdirectory is hardcoded;

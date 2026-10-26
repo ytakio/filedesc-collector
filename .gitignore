@@ -2,6 +2,7 @@ build/
 bin/
 __pycache__/
 proto/
+foxglove-sdk/
 go.work.sum
 *.pb.go
 *.mcap
