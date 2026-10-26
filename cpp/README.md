@@ -4,9 +4,9 @@ Header-only library.
 
 ## Requirements
 
-- CMake 3.16+
+- CMake 3.16+ (3.20+ for the MCAP writer example)
 - C++17 compiler
-- Protobuf development libraries (tested with 7.36.2 / protobuf 36.2)
+- Protobuf development libraries (tested with libprotoc 7.36.2 / protobuf 36.2)
 - Abseil (required by modern Protobuf)
 - GTest (optional, for tests)
 
@@ -61,11 +61,35 @@ To disable tests:
 cmake -DBUILD_TESTING=OFF ..
 ```
 
+To disable examples:
+
+```bash
+cmake -DBUILD_EXAMPLES=OFF ..
+```
+
 ## Run tests
 
 ```bash
+cd cpp
 make
-ctest --output-on-failure
+```
+
+Or directly with CMake:
+
+```bash
+cd cpp
+cmake -B build -S .
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+To build only the library and tests without examples:
+
+```bash
+cd cpp
+cmake -B build -S . -DBUILD_EXAMPLES=OFF
+make
+ctest
 ```
 
 ## Usage
@@ -84,3 +108,8 @@ for (const auto& p : protos.value()) {
 }
 ```
 
+## Example
+
+See [`example/mcapwriter`](example/mcapwriter) for an end-to-end MCAP writer
+example. Run `make example` from `cpp/` to build and run it; it produces
+`cpp/output.mcap`.

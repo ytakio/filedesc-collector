@@ -79,6 +79,14 @@ Directly from this repository:
 pip install "filedesc-collector @ git+https://github.com/ytakio/filedesc-collector.git#subdirectory=python"
 ```
 
+The project uses `uv` for local development. To install in editable mode with
+`uv`:
+
+```bash
+cd python
+uv pip install -e '.[dev]'
+```
+
 ### Usage
 
 ```python
@@ -95,8 +103,14 @@ Run tests:
 
 ```bash
 cd python
-pip install -e '.[dev]'
-pytest
+make
+```
+
+Or directly with `uv`:
+
+```bash
+cd python
+uv run pytest
 ```
 
 ## C++
@@ -142,8 +156,14 @@ Build and test:
 
 ```bash
 cd cpp
-mkdir build && cd build
-cmake ..
+make
+```
+
+To build only the library and tests without examples:
+
+```bash
+cd cpp
+cmake -B build -S . -DBUILD_EXAMPLES=OFF
 make
 ctest
 ```
@@ -156,24 +176,20 @@ protobuf `FileDescriptorSet` schemas and a popular MCAP writer library to create
 the file.
 
 - [`python/example/mcapwriter`](python/example/mcapwriter) — Python example
-  using `mcap-protobuf-support` and `foxglove-schemas-protobuf`. Run `make run`
-  from `python/` to produce `python/build/output.mcap`.
+  using the `mcap` Python library and generated Foxglove protobuf bindings.
+  Run `make example` from `python/` to produce
+  `python/example/mcapwriter/output.mcap`.
 - [`cpp/example/mcapwriter`](cpp/example/mcapwriter) — C++ example using the
   Foxglove MCAP C++ library and generated Foxglove protobuf bindings. Run
-  `make run` from `cpp/` to produce `cpp/build/example/mcapwriter/output.mcap`.
+  `make example` from `cpp/` to produce `cpp/output.mcap`.
 - [`go/example/mcapwriter`](go/example/mcapwriter) — Go example using the
-  Foxglove MCAP Go SDK and generated Foxglove protobuf bindings. Run `make run`
-  from `go/` to produce `go/build/output.mcap`.
+  Foxglove MCAP Go SDK and generated Foxglove protobuf bindings. Run
+  `make example` from `go/` to produce `go/output.mcap`.
 
 ## Notes
 
 - Dependencies are collected in depth-first order and deduplicated within a
   single collection. A `FileDescriptorSetCollector` instance can be reused for
   multiple independent collections.
-- If you need a single combined `FileDescriptorSet`, wrap the returned protos in
-  one:
-
-  ```go
-  fds := &descriptorpb.FileDescriptorSet{File: protos}
-  ```
-
+- If you need a single combined `FileDescriptorSet`, wrap the returned protos
+  in one: `fds := &descriptorpb.FileDescriptorSet{File: protos}`.

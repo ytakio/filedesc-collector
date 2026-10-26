@@ -8,7 +8,7 @@ This example writes a small MCAP file using:
   upstream `.proto` schemas
 - `google.protobuf.Timestamp` and `foxglove.SceneUpdate` as sample messages
 
-This mirrors the Go `go/example/mcapwriter` example.
+This mirrors the Go and C++ `mcapwriter` examples.
 
 ## Run
 
@@ -25,12 +25,23 @@ cd python
 uv run python example/mcapwriter/main.py
 ```
 
-This creates `output.mcap` in `python/`. Ensure the package is installed in the
-active virtual environment (e.g. `uv pip install -e .`) so `filedesc` and
-`proto` can be imported when running a script by path.
+This downloads the Foxglove SDK protobuf schemas, extracts them into `proto/`
+at the repository root, generates Python protobuf bindings into
+`python/proto/`, and writes `python/example/mcapwriter/output.mcap`.
+
+Ensure the package is installed in the active virtual environment (e.g.
+`uv pip install -e .`) so `filedesc` and `proto` can be imported when running a
+script by path.
 
 ## Clean generated files
 
 ```bash
 make clean
+```
+
+To also remove the shared schema archive and extracted `.proto` files from the
+repository root, run:
+
+```bash
+make clean-all
 ```

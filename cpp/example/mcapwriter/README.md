@@ -10,37 +10,30 @@ This example writes a small MCAP file using:
 
 This mirrors the Go and Python `mcapwriter` examples.
 
-## Build
+## Build and run
 
 ```bash
 cd cpp
-make build
+make example
 ```
 
 This downloads the Foxglove SDK protobuf schemas, extracts them into `proto/`
 at the repository root, generates C++ protobuf bindings into `cpp/proto/`,
-and then builds the example with CMake under `cpp/build/example/mcapwriter/`.
+builds the example with CMake under `cpp/build/example/mcapwriter/`, and runs
+it. The resulting MCAP file is written to `cpp/output.mcap`.
 
-## Run
-
-```bash
-make run
-```
-
-Or directly:
+To run the built binary directly:
 
 ```bash
-cd build/example/mcapwriter
-./mcapwriter
+cd cpp
+./build/example/mcapwriter/mcapwriter
 ```
-
-This creates `output.mcap` in `cpp/build/example/mcapwriter/`.
 
 ## Requirements
 
 - CMake 3.20+
 - C++17 compiler
-- Protobuf development libraries (tested with 7.36.2 / protobuf 36.2)
+- Protobuf development libraries (tested with libprotoc 7.36.2 / protobuf 36.2)
 - Abseil (required by modern Protobuf)
 - lz4 and zstd libraries (required by the MCAP writer for chunk compression)
 - Network access to fetch the foxglove/mcap C++ headers and Foxglove schema tarball
