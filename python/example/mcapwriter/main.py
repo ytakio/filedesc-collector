@@ -123,7 +123,7 @@ def write_mcap(output_path: Path) -> None:
 
 
 def main() -> int:
-    output_path = Path(__file__).with_name("output.mcap")
+    output_path = Path("output.mcap")
     write_mcap(output_path)
     print(f"Wrote {output_path}")
     return 0
