@@ -1,8 +1,6 @@
-.PHONY: all build run clean protoc pbgo
+.PHONY: all example test clean protoc pbgo
 
 EXAMPLE_DIR := example/mcapwriter
-BUILD_DIR := build
-BIN_DIR := $(BUILD_DIR)/bin
 
 # Repo-root directory (this Makefile is at go/). This example is at
 # go/example/mcapwriter.
@@ -28,17 +26,16 @@ PROTOC_GEN_GO = $(shell go tool -n protoc-gen-go)
 # because go/ itself contains no .go files.
 GO_MODULE_PATH := $(shell go list -m -f '{{.Path}}')
 
-all: build
+all: test
 
-build: protoc
-	@mkdir -p $(BUILD_DIR)
-	go build -o $(BUILD_DIR)/ ./$(EXAMPLE_DIR)
+test:
+	go test ./filedesc
 
-run: protoc
-	cd $(EXAMPLE_DIR) && go run .
+example: protoc
+	go run ./$(EXAMPLE_DIR)
 
 clean:
-	rm -rf $(BUILD_DIR) $(GEN_DIR)
+	rm -rf $(GEN_DIR)
 
 # Shared cleanup target for the whole repository; removes the shared schema
 # archive and extracted .proto files from the repo root.
