@@ -6,3 +6,4 @@ go.work.sum
 *.pb.go
 *.mcap
 *.tar.gz
+uv.lock

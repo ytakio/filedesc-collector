@@ -65,11 +65,13 @@ set(MCAP_INCLUDE_DIR ${mcap_SOURCE_DIR}/cpp/mcap/include)
 # filedesc-collector header lives two directories above this example.
 set(FILEDESC_INCLUDE_DIR ../../include)
 
-# Generated protobuf C++ sources for foxglove schemas. The Makefile downloads
-# the .proto files and runs protoc before invoking CMake.
-set(PROTO_GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../proto)
-file(GLOB FOXGLOVE_PB_SOURCES CONFIGURE_DEPENDS ${PROTO_GEN_DIR}/foxglove/*.pb.cc)
-file(GLOB FOXGLOVE_PB_HEADERS CONFIGURE_DEPENDS ${PROTO_GEN_DIR}/foxglove/*.pb.h)
+# Generated protobuf C++ sources. The Makefile downloads the .proto files and
+# runs protoc before invoking CMake; the layout under $(PROTO_GEN_DIR) mirrors
+# the layout of the upstream schema directory, so glob recursively rather than
+# hardcoding a subdirectory such as foxglove/.
+set(PROTO_GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../build/proto)
+file(GLOB_RECURSE FOXGLOVE_PB_SOURCES CONFIGURE_DEPENDS ${PROTO_GEN_DIR}/*.pb.cc)
+file(GLOB_RECURSE FOXGLOVE_PB_HEADERS CONFIGURE_DEPENDS ${PROTO_GEN_DIR}/*.pb.h)
 
 add_executable(mcapwriter main.cpp ${FOXGLOVE_PB_SOURCES})
 

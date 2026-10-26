@@ -15,7 +15,7 @@ Repository: `github.com/ytakio/filedesc-collector`
 
 ## Go
 
-Module path: `github.com/ytakio/filedesc-collector`
+Module path: `github.com/ytakio/filedesc-collector/go`
 Package path: `github.com/ytakio/filedesc-collector/go/filedesc`
 
 ### Install
@@ -49,8 +49,15 @@ func main() {
 Run tests:
 
 ```bash
-cd go/filedesc
-go test ./...
+cd go
+make
+```
+
+Run the example:
+
+```bash
+cd go
+make example
 ```
 
 ## Python
@@ -149,11 +156,14 @@ protobuf `FileDescriptorSet` schemas and a popular MCAP writer library to create
 the file.
 
 - [`python/example/mcapwriter`](python/example/mcapwriter) — Python example
-  using `mcap-protobuf-support` and `foxglove-schemas-protobuf`.
+  using `mcap-protobuf-support` and `foxglove-schemas-protobuf`. Run `make run`
+  from `python/` to produce `python/build/output.mcap`.
 - [`cpp/example/mcapwriter`](cpp/example/mcapwriter) — C++ example using the
-  Foxglove MCAP C++ library and generated Foxglove protobuf bindings.
+  Foxglove MCAP C++ library and generated Foxglove protobuf bindings. Run
+  `make run` from `cpp/` to produce `cpp/build/example/mcapwriter/output.mcap`.
 - [`go/example/mcapwriter`](go/example/mcapwriter) — Go example using the
-  Foxglove MCAP Go SDK and generated Foxglove protobuf bindings.
+  Foxglove MCAP Go SDK and generated Foxglove protobuf bindings. Run `make run`
+  from `go/` to produce `go/build/output.mcap`.
 
 ## Notes
 

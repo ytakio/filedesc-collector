@@ -3,50 +3,30 @@
 This example writes a small MCAP file using:
 
 - `filedesc-collector` to collect protobuf `FileDescriptorSet` schemas
-- `foxglove-sdk` (the official Foxglove SDK) to write the file
+- the `mcap` Python library to write the file
+- generated `foxglove` protobuf bindings from the upstream `.proto` schemas
 - `google.protobuf.Timestamp` and `foxglove.SceneUpdate` as sample messages
 
 This mirrors the Go `go/example/mcapwriter` example.
 
-The `foxglove-sdk` package provides native `foxglove.messages.SceneUpdate` and
-`foxglove.channels.SceneUpdateChannel` classes, so the SceneUpdate channel does
-not require manual protobuf serialization or a generated `FileDescriptorSet`.
-The `/timestamp` channel, on the other hand, uses a generic
-`foxglove.Channel` with a `FileDescriptorSet` produced by
-`filedesc-collector`.
-
 ## Run
 
-```bash
-cd python/example/mcapwriter
-make run
-```
-
-Or directly:
+From the `python/` directory:
 
 ```bash
-cd python/example/mcapwriter
-python main.py
+make example
 ```
 
-This creates `output.mcap` in the current directory.
-
-## Install dependencies
-
-### Using pip
+Or directly with `uv`:
 
 ```bash
-cd python/example/mcapwriter
-pip install -e ../../
-pip install -r requirements.txt
+cd python
+uv run python example/mcapwriter/main.py
 ```
 
-### Using uv
-
-```bash
-cd python/example/mcapwriter
-uv run main.py
-```
+This creates `output.mcap` in `python/`. Ensure the package is installed in the
+active virtual environment (e.g. `uv pip install -e .`) so `filedesc` can be
+imported when running a script by path.
 
 ## Clean generated files
 
