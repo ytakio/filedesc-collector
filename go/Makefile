@@ -48,7 +48,7 @@ protoc: | $(PROTO_ROOT)
 
 $(PROTO_ROOT): $(FOXGLOVE_TARBALL)
 	@mkdir -p $(PROTO_ROOT)
-	@tar xzf $< -C $(PROTO_ROOT) --strip-components=3 '*/schemas/proto/*'
+	@tar xzf $< -C $(PROTO_ROOT) --wildcards --strip-components=3 '*/schemas/proto/*'
 
 # Proto sources are discovered after extraction so that the Makefile can be
 # re-read once the schema directory exists. No subdirectory is hardcoded;
