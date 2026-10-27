@@ -18,13 +18,13 @@ Repository: `github.com/ytakio/filedesc-collector`
 Module path: `github.com/ytakio/filedesc-collector/go`
 Package path: `github.com/ytakio/filedesc-collector/go/filedesc`
 
-### Install
+### Go installation
 
 ```bash
 go get github.com/ytakio/filedesc-collector/go/filedesc
 ```
 
-### Usage
+### Go usage
 
 ```go
 import (
@@ -65,7 +65,7 @@ make example
 Package name: `filedesc-collector`
 Import name: `filedesc`
 
-### Install
+### Python installation
 
 From PyPI (when published):
 
@@ -120,7 +120,7 @@ uv run pytest
 
 Header-only library. Include path: `filedesc/filedesc.hpp`
 
-### Install
+### C++ installation
 
 Use CMake's `FetchContent` to consume the library directly from this repository:
 
@@ -139,7 +139,7 @@ FetchContent_MakeAvailable(filedesc)
 target_link_libraries(your_target PRIVATE filedesc)
 ```
 
-### Usage
+### C++ usage
 
 ```cpp
 #include <google/protobuf/timestamp.pb.h>
@@ -155,7 +155,7 @@ for (const auto& p : protos.value()) {
 }
 ```
 
-Build and test:
+### Build and test
 
 ```bash
 cd cpp
@@ -178,20 +178,22 @@ Each example writes a small MCAP file using `filedesc-collector` to supply
 protobuf `FileDescriptorSet` schemas and a popular MCAP writer library to create
 the file.
 
-- [`python/example/mcapwriter.py`](python/example/mcapwriter.py) — Python example
-  using the `mcap` Python library and generated Foxglove protobuf bindings.
-  Run `make example` from `python/` to produce
+- [`python/example/mcapwriter.py`](python/example/mcapwriter.py) — Python
+  example using the `mcap` Python library and generated Foxglove protobuf
+  bindings. Run `make example` from `python/` to produce
   `python/example/output.mcap`.
-- [`cpp/example/mcapwriter/main.cpp`](cpp/example/mcapwriter/main.cpp) — C++ example using the
-  Foxglove MCAP C++ library and generated Foxglove protobuf bindings. Run
-  `make example` from `cpp/` to produce `cpp/example/output.mcap`.
-- [`go/example/mcapwriter/main.go`](go/example/mcapwriter/main.go) — Go example using the
-  Foxglove MCAP Go SDK and generated Foxglove protobuf bindings. Run
-  `make example` from `go/` to produce `go/example/output.mcap`.
+- [`cpp/example/mcapwriter/main.cpp`](cpp/example/mcapwriter/main.cpp) — C++
+  example using the Foxglove MCAP C++ library and generated Foxglove protobuf
+  bindings. Run `make example` from `cpp/` to produce
+  `cpp/example/output.mcap`.
+- [`go/example/mcapwriter/main.go`](go/example/mcapwriter/main.go) — Go
+  example using the Foxglove MCAP Go SDK and generated Foxglove protobuf
+  bindings. Run `make example` from `go/` to produce
+  `go/example/output.mcap`.
 
 ## Repository layout
 
-```
+```text
 .
 ├── go/              # Go library and example
 ├── python/          # Python library and example

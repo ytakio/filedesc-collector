@@ -121,4 +121,4 @@ for (const auto& p : protos.value()) {
 
 See [`example/mcapwriter`](example/mcapwriter) for an end-to-end MCAP writer
 example. Run `make example` from `cpp/` to build and run it; it produces
-`cpp/output.mcap`.
+`cpp/example/output.mcap`.

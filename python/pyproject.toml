@@ -1,7 +1,7 @@
 [project]
 name = "filedesc"
 version = "0.1.0"
-description = "Add your description here"
+description = "Collect protobuf FileDescriptorProto messages including transitive dependencies"
 readme = "README.md"
 authors = [
     { name = "Takio Yamaoka", email = "y.takio@gmail.com" }

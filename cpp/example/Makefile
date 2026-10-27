@@ -20,14 +20,12 @@ GEN_DIR := proto
 # Build directory and binary name for the C++ example.
 BUILD_DIR := build
 EXAMPLE_BINARY := mcapwriter
-EXAMPLE_OUTPUT := $(BUILD_DIR)/output.mcap
 
 all: example
 
 example: protoc
 	cmake -B $(BUILD_DIR) -S mcapwriter
 	cmake --build $(BUILD_DIR)
-	@rm -f $(EXAMPLE_OUTPUT)
 	./$(BUILD_DIR)/$(EXAMPLE_BINARY)
 
 clean:

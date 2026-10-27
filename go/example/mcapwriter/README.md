@@ -29,7 +29,7 @@ go run ./mcapwriter
 
 This downloads the Foxglove SDK protobuf schemas, extracts them into `proto/`
 at the repository root, generates Go protobuf bindings into `../proto/`, and
-writes `../output.mcap`.
+writes `output.mcap` in this directory (`go/example/`).
 
 ## Clean generated files
 
