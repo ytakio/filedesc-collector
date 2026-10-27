@@ -1,4 +1,4 @@
-.PHONY: all example test clean clean-all
+.PHONY: all example test clean clean-all nats-example
 
 all: test
 
@@ -7,6 +7,9 @@ test:
 
 example:
 	$(MAKE) -C example example
+
+nats-example:
+	$(MAKE) -C example nats-example
 
 clean:
 	$(MAKE) -C example clean

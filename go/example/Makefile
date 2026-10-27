@@ -1,4 +1,4 @@
-.PHONY: all example test clean clean-all protoc pbgo
+.PHONY: all example test clean clean-all protoc pbgo nats-example nats-sender nats-receiver nats-up nats-down
 
 # This Makefile is at go/example/. The repository root is two levels up.
 REPO_ROOT := ../..
@@ -30,6 +30,21 @@ all: example
 
 example: protoc
 	go run ./mcapwriter
+
+nats-example: protoc
+	$(MAKE) -C nats example
+
+nats-sender: protoc
+	$(MAKE) -C nats sender
+
+nats-receiver: protoc
+	$(MAKE) -C nats receiver
+
+nats-up:
+	$(MAKE) -C nats up
+
+nats-down:
+	$(MAKE) -C nats down
 
 clean:
 	rm -rf $(GEN_DIR)
