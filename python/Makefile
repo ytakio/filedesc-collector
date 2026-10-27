@@ -13,4 +13,4 @@ clean:
 
 clean-all: clean
 	$(MAKE) -C example clean-all
-
+	rm -rf .venv

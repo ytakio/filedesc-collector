@@ -1,5 +1,4 @@
 find_package(Protobuf REQUIRED)
-find_package(absl REQUIRED)
 
 add_library(filedesc INTERFACE)
 target_include_directories(filedesc INTERFACE
@@ -8,7 +7,16 @@ target_include_directories(filedesc INTERFACE
 )
 target_link_libraries(filedesc INTERFACE
     protobuf::libprotobuf
-    absl::log_internal_check_op
-    absl::log_internal_message
 )
+
+# Newer Protobuf builds (e.g. Homebrew's) depend on absl logging internals but
+# do not always re-export them transitively. Try to find absl and link the
+# targets when they are available.
+find_package(absl QUIET)
+if(TARGET absl::log_internal_check_op)
+    target_link_libraries(filedesc INTERFACE absl::log_internal_check_op)
+endif()
+if(TARGET absl::log_internal_message)
+    target_link_libraries(filedesc INTERFACE absl::log_internal_message)
+endif()
 
