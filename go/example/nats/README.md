@@ -8,14 +8,16 @@ MCAP file.
 
 - `docker-compose.yml` starts a NATS server with JetStream enabled.
 - `sender` publishes:
-  - `FileDescriptorSet` bytes to the `SCHEMAS` KV bucket keyed by proto file
-    path (e.g., `foxglove/SceneUpdate.proto`).
-  - the proto file path to the `TOPICS` KV bucket keyed by NATS subject name
-    (e.g., `sensor.dummy`).
+  - individual `FileDescriptorProto` messages to the `SCHEMAS` KV bucket,
+    keyed by proto file path (e.g., `foxglove/SceneUpdate.proto`).
+  - a `proto_path|message_full_name` value to the `TOPICS` KV bucket keyed by
+    NATS subject name (e.g., `sensor.dummy`).
   - serialized protobuf messages to NATS subjects derived from MCAP topics by
     replacing `/` with `.` (e.g., `/sensor/dummy` → `sensor.dummy`).
-- `receiver` subscribes to fixed NATS subjects, looks up the proto path from
-  `TOPICS`, fetches the `FileDescriptorSet` from `SCHEMAS`, builds a dynamic
+- `receiver` subscribes to fixed NATS subjects, looks up the proto path and
+  message full name from `TOPICS`, fetches the individual
+  `FileDescriptorProto` entries from `SCHEMAS`, recursively resolves
+  dependencies to reconstruct a `FileDescriptorSet`, builds a dynamic
   descriptor, parses each message, and writes it to `output.mcap`.
 
 ## Run

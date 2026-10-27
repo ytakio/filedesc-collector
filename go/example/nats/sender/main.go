@@ -1,5 +1,5 @@
-// sender publishes protobuf FileDescriptorSets to NATS KV and serialized
-// protobuf messages to NATS subjects.
+// sender publishes individual protobuf FileDescriptorProtos to NATS KV and
+// serialized protobuf messages to NATS subjects.
 package main
 
 import (
@@ -11,7 +11,6 @@ import (
 	"github.com/ytakio/filedesc-collector/go/example/nats/common"
 	"github.com/ytakio/filedesc-collector/go/filedesc"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 const (
@@ -61,16 +60,18 @@ func run() error {
 			return fmt.Errorf("collect file descriptors for %s: %w", cfg.Topic, err)
 		}
 
-		fdSetBytes, err := proto.Marshal(&descriptorpb.FileDescriptorSet{File: fdProtos})
-		if err != nil {
-			return fmt.Errorf("marshal file descriptor set for %s: %w", cfg.Topic, err)
-		}
-
 		protoPath := common.ProtoPath(cfg.SchemaMsg)
-		if _, err := schemasKV.Put(protoPath, fdSetBytes); err != nil {
-			return fmt.Errorf("put schema %s for %s: %w", protoPath, cfg.Topic, err)
+		for _, fdProto := range fdProtos {
+			path := fdProto.GetName()
+			data, err := proto.Marshal(fdProto)
+			if err != nil {
+				return fmt.Errorf("marshal file descriptor %s for %s: %w", path, cfg.Topic, err)
+			}
+			if _, err := schemasKV.Put(path, data); err != nil {
+				return fmt.Errorf("put file descriptor %s for %s: %w", path, cfg.Topic, err)
+			}
+			fmt.Printf("published file descriptor %s -> %s (%d bytes)\n", cfg.Topic, path, len(data))
 		}
-		fmt.Printf("published schema %s -> %s (%d bytes)\n", cfg.Topic, protoPath, len(fdSetBytes))
 
 		msgName := string(descriptor.Descriptor().FullName())
 		topicValue := fmt.Sprintf("%s|%s", protoPath, msgName)

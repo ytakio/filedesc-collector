@@ -1,6 +1,6 @@
-// receiver subscribes to fixed NATS subjects, resolves protobuf schemas from
-// NATS KV, parses messages with dynamic descriptors, and writes them to an
-// MCAP file.
+// receiver subscribes to fixed NATS subjects, collects individual protobuf
+// FileDescriptorProtos from NATS KV into a FileDescriptorSet, parses messages
+// with dynamic descriptors, and writes them to an MCAP file.
 package main
 
 import (
@@ -210,18 +210,16 @@ func (s *writeState) resolveProtoPath(topic string) (string, protoreflect.FullNa
 }
 
 func (s *writeState) resolveSchema(protoPath string, fullName protoreflect.FullName) ([]byte, protoreflect.MessageDescriptor, error) {
-	entry, err := s.schemasKV.Get(protoPath)
+	fdSet, err := s.collectFileDescriptorSet(protoPath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("get schema: %w", err)
+		return nil, nil, fmt.Errorf("collect file descriptor set: %w", err)
 	}
-	schemaBytes := entry.Value()
-
-	var fdSet descriptorpb.FileDescriptorSet
-	if err := proto.Unmarshal(schemaBytes, &fdSet); err != nil {
-		return nil, nil, fmt.Errorf("unmarshal file descriptor set: %w", err)
+	schemaBytes, err := proto.Marshal(fdSet)
+	if err != nil {
+		return nil, nil, fmt.Errorf("marshal file descriptor set: %w", err)
 	}
 
-	files, err := protodesc.NewFiles(&fdSet)
+	files, err := protodesc.NewFiles(fdSet)
 	if err != nil {
 		return nil, nil, fmt.Errorf("build file registry: %w", err)
 	}
@@ -237,6 +235,42 @@ func (s *writeState) resolveSchema(protoPath string, fullName protoreflect.FullN
 	}
 
 	return schemaBytes, md, nil
+}
+
+func (s *writeState) collectFileDescriptorSet(protoPath string) (*descriptorpb.FileDescriptorSet, error) {
+	seen := make(map[string]struct{})
+	var collect func(string) ([]*descriptorpb.FileDescriptorProto, error)
+	collect = func(path string) ([]*descriptorpb.FileDescriptorProto, error) {
+		if _, ok := seen[path]; ok {
+			return nil, nil
+		}
+		seen[path] = struct{}{}
+
+		entry, err := s.schemasKV.Get(path)
+		if err != nil {
+			return nil, fmt.Errorf("get file descriptor %s: %w", path, err)
+		}
+		var fdProto descriptorpb.FileDescriptorProto
+		if err := proto.Unmarshal(entry.Value(), &fdProto); err != nil {
+			return nil, fmt.Errorf("unmarshal file descriptor %s: %w", path, err)
+		}
+
+		var result []*descriptorpb.FileDescriptorProto
+		for _, dep := range fdProto.Dependency {
+			depProtos, err := collect(dep)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, depProtos...)
+		}
+		return append(result, &fdProto), nil
+	}
+
+	fdProtos, err := collect(protoPath)
+	if err != nil {
+		return nil, err
+	}
+	return &descriptorpb.FileDescriptorSet{File: fdProtos}, nil
 }
 
 func (s *writeState) ensureSchema(topic string, fullName protoreflect.FullName, schemaBytes []byte) (uint16, error) {
