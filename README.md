@@ -178,16 +178,16 @@ Each example writes a small MCAP file using `filedesc-collector` to supply
 protobuf `FileDescriptorSet` schemas and a popular MCAP writer library to create
 the file.
 
-- [`python/example/mcapwriter`](python/example/mcapwriter) — Python example
+- [`python/example/mcapwriter.py`](python/example/mcapwriter.py) — Python example
   using the `mcap` Python library and generated Foxglove protobuf bindings.
   Run `make example` from `python/` to produce
-  `python/example/mcapwriter/output.mcap`.
-- [`cpp/example/mcapwriter`](cpp/example/mcapwriter) — C++ example using the
+  `python/example/output.mcap`.
+- [`cpp/example/mcapwriter/main.cpp`](cpp/example/mcapwriter/main.cpp) — C++ example using the
   Foxglove MCAP C++ library and generated Foxglove protobuf bindings. Run
-  `make example` from `cpp/` to produce `cpp/output.mcap`.
-- [`go/example/mcapwriter`](go/example/mcapwriter) — Go example using the
+  `make example` from `cpp/` to produce `cpp/example/output.mcap`.
+- [`go/example/mcapwriter/main.go`](go/example/mcapwriter/main.go) — Go example using the
   Foxglove MCAP Go SDK and generated Foxglove protobuf bindings. Run
-  `make example` from `go/` to produce `go/output.mcap`.
+  `make example` from `go/` to produce `go/example/output.mcap`.
 
 ## Repository layout
 

@@ -69,7 +69,7 @@ set(FILEDESC_INCLUDE_DIR ../../include)
 # runs protoc before invoking CMake; the layout under $(PROTO_GEN_DIR) mirrors
 # the layout of the upstream schema directory, so glob recursively rather than
 # hardcoding a subdirectory such as foxglove/.
-set(PROTO_GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../proto)
+set(PROTO_GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../proto)
 file(GLOB_RECURSE FOXGLOVE_PB_SOURCES CONFIGURE_DEPENDS ${PROTO_GEN_DIR}/*.pb.cc)
 file(GLOB_RECURSE FOXGLOVE_PB_HEADERS CONFIGURE_DEPENDS ${PROTO_GEN_DIR}/*.pb.h)
 

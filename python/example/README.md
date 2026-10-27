@@ -4,7 +4,7 @@ This example writes a small MCAP file using:
 
 - `filedesc-collector` to collect protobuf `FileDescriptorSet` schemas
 - the `mcap` Python library to write the file
-- generated `foxglove` protobuf bindings under `python/proto/foxglove/` from the
+- generated `foxglove` protobuf bindings under `./proto/foxglove/` from the
   upstream `.proto` schemas
 - `google.protobuf.Timestamp` and `foxglove.SceneUpdate` as sample messages
 
@@ -12,28 +12,29 @@ This mirrors the Go and C++ `mcapwriter` examples.
 
 ## Run
 
-From the `python/` directory:
+From this directory (`python/example/`):
 
 ```bash
 make example
 ```
 
-Or directly with `uv`:
+Or run the script directly:
 
 ```bash
-cd python
-uv run python example/mcapwriter/main.py
+uv run python mcapwriter.py
 ```
 
 This downloads the Foxglove SDK protobuf schemas, extracts them into `proto/`
-at the repository root, generates Python protobuf bindings into
-`python/proto/`, and writes `python/example/mcapwriter/output.mcap`.
+at the repository root, generates Python protobuf bindings into `./proto/`,
+and writes `./output.mcap`.
 
 Ensure the package is installed in the active virtual environment (e.g.
 `uv pip install -e .`) so `filedesc` and `proto` can be imported when running a
 script by path.
 
 ## Clean generated files
+
+From this directory:
 
 ```bash
 make clean

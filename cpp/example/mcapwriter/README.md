@@ -6,28 +6,32 @@ This example writes a small MCAP file using:
   `FileDescriptorSet` schemas
 - the [Foxglove MCAP C++ library](https://github.com/foxglove/mcap) to write
   the file
-- `google.protobuf.Timestamp` and `foxglove.SceneUpdate` as sample messages
+- generated `foxglove` protobuf bindings under `../proto/foxglove/` from the
+  upstream `.proto` schemas
 
 This mirrors the Go and Python `mcapwriter` examples.
 
 ## Build and run
 
+From this directory (`cpp/example/mcapwriter/`):
+
 ```bash
-cd cpp
+cd ../..
 make example
 ```
 
-This downloads the Foxglove SDK protobuf schemas, extracts them into `proto/`
-at the repository root, generates C++ protobuf bindings into `cpp/proto/`,
-builds the example with CMake under `cpp/build/example/mcapwriter/`, and runs
-it. The resulting MCAP file is written to `cpp/output.mcap`.
-
-To run the built binary directly:
+Or build and run directly:
 
 ```bash
-cd cpp
-./build/example/mcapwriter/mcapwriter
+cd ..
+cmake -B build -S mcapwriter
+cmake --build build
+./build/mcapwriter
 ```
+
+This downloads the Foxglove SDK protobuf schemas, extracts them into `proto/`
+at the repository root, generates C++ protobuf bindings into `../proto/`,
+builds the example under `../build/`, and writes `../output.mcap`.
 
 ## Requirements
 
@@ -53,15 +57,19 @@ sudo apt-get install cmake libprotobuf-dev protobuf-compiler libabsl-dev \
 
 ## Clean
 
+From this directory:
+
 ```bash
+cd ../..
 make clean
 ```
 
-This removes the generated `build/` and `proto/` directories under `cpp/`.
+This removes the generated `../build/` and `../proto/` directories.
 
 To also remove the shared schema archive and extracted `.proto` files from the
 repository root, run:
 
 ```bash
+cd ../..
 make clean-all
 ```
