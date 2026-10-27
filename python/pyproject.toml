@@ -1,13 +1,25 @@
 [project]
 name = "filedesc-collector"
 version = "0.1.0"
-description = "Collect FileDescriptorSets including transitive dependencies"
-requires-python = ">=3.10"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Takio Yamaoka", email = "y.takio@gmail.com" }
+]
+requires-python = ">=3.14"
 dependencies = [
-    "mcap>=1.6",
-    "protobuf>=5.0",
-    "pytest>=9.1.1",
+    "mcap>=1.6.0",
+    "protobuf>=7.36.2",
 ]
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
+[project.scripts]
+filedesc-collector = "filedesc_collector:main"
+
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
