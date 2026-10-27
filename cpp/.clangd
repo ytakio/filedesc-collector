@@ -2,10 +2,9 @@
 If:
   PathMatch: example/mcapwriter/.*
 CompileFlags:
-  CompilationDatabase: build/example/mcapwriter
+  CompilationDatabase: example/build/
 ---
 If:
   PathMatch: tests/
 CompileFlags:
-  CompilationDatabase: build
-
+  CompilationDatabase: build/
