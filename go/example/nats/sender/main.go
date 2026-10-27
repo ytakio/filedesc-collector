@@ -45,12 +45,12 @@ func run() error {
 		return fmt.Errorf("schemas kv: %w", err)
 	}
 
-	topicsKV, err := common.GetOrCreateKV(js, common.TopicBucket)
+	subjectsKV, err := common.GetOrCreateKV(js, common.SubjectBucket)
 	if err != nil {
-		return fmt.Errorf("topics kv: %w", err)
+		return fmt.Errorf("subjects kv: %w", err)
 	}
 
-	// Publish each channel's schema and topic-to-proto-path mapping first so
+	// Publish each channel's schema and subject-to-proto-path mapping first so
 	// the receiver can resolve schemas before any data arrives.
 	for _, cfg := range common.ChannelConfigs {
 		descriptor := cfg.SchemaMsg.ProtoReflect()
@@ -73,12 +73,13 @@ func run() error {
 			fmt.Printf("published file descriptor %s -> %s (%d bytes)\n", cfg.Topic, path, len(data))
 		}
 
+		subject := common.TopicToSubject(cfg.Topic)
 		msgName := string(descriptor.Descriptor().FullName())
-		topicValue := fmt.Sprintf("%s|%s", protoPath, msgName)
-		if _, err := topicsKV.Put(cfg.Topic, []byte(topicValue)); err != nil {
-			return fmt.Errorf("put topic mapping %s -> %s: %w", cfg.Topic, topicValue, err)
+		subjectValue := fmt.Sprintf("%s|%s", protoPath, msgName)
+		if _, err := subjectsKV.Put(subject, []byte(subjectValue)); err != nil {
+			return fmt.Errorf("put subject mapping %s -> %s: %w", subject, subjectValue, err)
 		}
-		fmt.Printf("published topic mapping %s -> %s\n", cfg.Topic, topicValue)
+		fmt.Printf("published subject mapping %s -> %s\n", subject, subjectValue)
 	}
 
 	// Publish serialized protobuf messages at a fixed rate.

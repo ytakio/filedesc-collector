@@ -21,9 +21,9 @@ const (
 	// SchemaBucket is the KV bucket name that stores FileDescriptorSet bytes
 	// keyed by proto file path.
 	SchemaBucket = "SCHEMAS"
-	// TopicBucket is the KV bucket name that stores the proto file path keyed
-	// by NATS subject name.
-	TopicBucket = "TOPICS"
+	// SubjectBucket is the KV bucket name that stores the proto file path
+	// keyed by NATS subject name.
+	SubjectBucket = "SUBJECTS"
 )
 
 // ChannelConfig describes one channel produced/consumed by the example.

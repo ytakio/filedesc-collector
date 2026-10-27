@@ -51,9 +51,9 @@ func run(outputPath string) (err error) {
 		return fmt.Errorf("schemas kv: %w", err)
 	}
 
-	topicsKV, err := common.GetOrCreateKV(js, common.TopicBucket)
+	subjectsKV, err := common.GetOrCreateKV(js, common.SubjectBucket)
 	if err != nil {
-		return fmt.Errorf("topics kv: %w", err)
+		return fmt.Errorf("subjects kv: %w", err)
 	}
 
 	f, err := os.Create(outputPath)
@@ -107,7 +107,7 @@ func run(outputPath string) (err error) {
 	state := &writeState{
 		w:           w,
 		schemasKV:   schemasKV,
-		topicsKV:    topicsKV,
+		subjectsKV:  subjectsKV,
 		schemaIDs:   make(map[string]uint16),
 		channelIDs:  make(map[string]uint16),
 		nextSchema:  1, // MCAP schema IDs must be non-zero.
@@ -150,7 +150,7 @@ type natsMsg struct {
 type writeState struct {
 	w           *mcap.Writer
 	schemasKV   nats.KeyValue
-	topicsKV    nats.KeyValue
+	subjectsKV  nats.KeyValue
 	schemaIDs   map[string]uint16
 	channelIDs  map[string]uint16
 	nextSchema  uint16
@@ -198,13 +198,14 @@ func (s *writeState) writeMessage(m *natsMsg, sequence uint32, logTime uint64) e
 }
 
 func (s *writeState) resolveProtoPath(topic string) (string, protoreflect.FullName, error) {
-	entry, err := s.topicsKV.Get(topic)
+	subject := common.TopicToSubject(topic)
+	entry, err := s.subjectsKV.Get(subject)
 	if err != nil {
 		return "", "", err
 	}
 	parts := strings.SplitN(string(entry.Value()), "|", 2)
 	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid topic value: %s", entry.Value())
+		return "", "", fmt.Errorf("invalid subject value: %s", entry.Value())
 	}
 	return parts[0], protoreflect.FullName(parts[1]), nil
 }
