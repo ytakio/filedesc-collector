@@ -1,5 +1,5 @@
 [project]
-name = "filedesc-collector"
+name = "filedesc"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -11,9 +11,6 @@ dependencies = [
     "mcap>=1.6.0",
     "protobuf>=7.36.2",
 ]
-
-[project.scripts]
-filedesc-collector = "filedesc_collector:main"
 
 [build-system]
 requires = ["uv_build>=0.13.5,<0.14.0"]
