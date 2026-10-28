@@ -55,6 +55,12 @@ func TopicToSubject(topic string) string {
 	return strings.ReplaceAll(strings.TrimPrefix(topic, "/"), "/", ".")
 }
 
+// SubjectToTopic converts a NATS subject ("sensor.dummy") into an MCAP-style
+// topic ("/sensor/dummy").
+func SubjectToTopic(subject string) string {
+	return "/" + strings.ReplaceAll(subject, ".", "/")
+}
+
 // ProtoPath returns the proto file path for a message type.
 func ProtoPath(msg proto.Message) string {
 	return string(msg.ProtoReflect().Descriptor().ParentFile().Path())

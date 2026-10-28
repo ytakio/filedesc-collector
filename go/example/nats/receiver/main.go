@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -87,14 +88,12 @@ func run(outputPath string) (err error) {
 	defer cancel()
 
 	msgChan := make(chan *natsMsg, 256)
-	subjectToTopic := make(map[string]string, len(common.ChannelConfigs))
 	var subs []*nats.Subscription
 	for _, cfg := range common.ChannelConfigs {
 		subject := common.TopicToSubject(cfg.Topic)
-		subjectToTopic[subject] = cfg.Topic
 		sub, err := nc.Subscribe(subject, func(m *nats.Msg) {
 			select {
-			case msgChan <- &natsMsg{msg: m, topic: subjectToTopic[m.Subject]}:
+			case msgChan <- &natsMsg{msg: m, subject: m.Subject}:
 			case <-ctx.Done():
 			}
 		})
@@ -105,13 +104,21 @@ func run(outputPath string) (err error) {
 	}
 
 	state := &writeState{
-		w:           w,
-		schemasKV:   schemasKV,
-		subjectsKV:  subjectsKV,
-		schemaIDs:   make(map[string]uint16),
-		channelIDs:  make(map[string]uint16),
-		nextSchema:  1, // MCAP schema IDs must be non-zero.
-		nextChannel: 0,
+		w:               w,
+		schemasKV:       schemasKV,
+		subjectsKV:      subjectsKV,
+		schemas:         make(map[string]*schema),
+		subjectMappings: make(map[string]*subjectMapping),
+		schemaIDs:       make(map[string]uint16),
+		channelIDs:      make(map[string]uint16),
+		nextSchema:      1, // MCAP schema IDs must be non-zero.
+		nextChannel:     0,
+	}
+
+	// Resolve every target subject's schema mapping and protobuf schema before
+	// subscribing so message handling uses only pre-resolved data.
+	if err := state.prefetchSubjectMappings(); err != nil {
+		return fmt.Errorf("prefetch subject mappings: %w", err)
 	}
 
 	done := make(chan struct{})
@@ -143,45 +150,106 @@ func run(outputPath string) (err error) {
 }
 
 type natsMsg struct {
-	msg   *nats.Msg
-	topic string
+	msg     *nats.Msg
+	subject string
+}
+
+type schema struct {
+	schemaBytes []byte
+	md          protoreflect.MessageDescriptor
+}
+
+type subjectMapping struct {
+	protoPath string
+	fullName  protoreflect.FullName
 }
 
 type writeState struct {
-	w           *mcap.Writer
-	schemasKV   nats.KeyValue
-	subjectsKV  nats.KeyValue
-	schemaIDs   map[string]uint16
-	channelIDs  map[string]uint16
-	nextSchema  uint16
-	nextChannel uint16
+	w               *mcap.Writer
+	schemasKV       nats.KeyValue
+	subjectsKV      nats.KeyValue
+	subjectMappings map[string]*subjectMapping
+	schemas         map[string]*schema
+	schemaIDs       map[string]uint16
+	channelIDs      map[string]uint16
+	nextSchema      uint16
+	nextChannel     uint16
+}
+
+func (s *writeState) prefetchSubjectMappings() error {
+	for _, cfg := range common.ChannelConfigs {
+		subject := common.TopicToSubject(cfg.Topic)
+		entry, err := s.waitForSubjectMapping(subject)
+		if err != nil {
+			return fmt.Errorf("get subject mapping %s: %w", subject, err)
+		}
+
+		var mapping common.SubjectMapping
+		if err := json.Unmarshal(entry.Value(), &mapping); err != nil {
+			return fmt.Errorf("unmarshal subject mapping for %s: %w", subject, err)
+		}
+
+		fullName := protoreflect.FullName(mapping.Schema.FullName)
+		s.subjectMappings[subject] = &subjectMapping{
+			protoPath: mapping.Schema.Path,
+			fullName:  fullName,
+		}
+
+		if _, _, err := s.resolveSchema(mapping.Schema.Path, fullName); err != nil {
+			return fmt.Errorf("prefetch schema %s for %s: %w", mapping.Schema.Path, subject, err)
+		}
+		fmt.Printf("prefetched schema for %s -> %s (%s)\n", subject, mapping.Schema.Path, fullName)
+	}
+	return nil
+}
+
+// waitForSubjectMapping retries reading the SUBJECTS KV entry until the sender
+// has published it or a generous timeout expires.
+func (s *writeState) waitForSubjectMapping(subject string) (nats.KeyValueEntry, error) {
+	const (
+		maxAttempts = 60
+		delay       = 500 * time.Millisecond
+	)
+	for range maxAttempts {
+		entry, err := s.subjectsKV.Get(subject)
+		if err == nil {
+			return entry, nil
+		}
+		if !errors.Is(err, nats.ErrKeyNotFound) {
+			return nil, err
+		}
+		time.Sleep(delay)
+	}
+	return nil, fmt.Errorf("subject mapping %s not found after %v", subject, maxAttempts*delay)
 }
 
 func (s *writeState) writeMessage(m *natsMsg, sequence uint32, logTime uint64) error {
-	protoPath, fullName, err := s.resolveProtoPath(m.topic)
-	if err != nil {
-		return fmt.Errorf("resolve proto path for %s: %w", m.topic, err)
+	mapping, ok := s.subjectMappings[m.subject]
+	if !ok {
+		return fmt.Errorf("no subject mapping for subject %s", m.subject)
 	}
 
-	schemaBytes, md, err := s.resolveSchema(protoPath, fullName)
-	if err != nil {
-		return fmt.Errorf("resolve schema %s: %w", protoPath, err)
+	schemaKey := string(mapping.fullName)
+	schema, ok := s.schemas[schemaKey]
+	if !ok {
+		return fmt.Errorf("no schema for %s", mapping.fullName)
 	}
 
-	// Demonstrate dynamic parsing with the schema resolved from NATS KV.
-	dynMsg := dynamicpb.NewMessage(md)
+	// Demonstrate dynamic parsing with the schema prepared before subscribe.
+	dynMsg := dynamicpb.NewMessage(schema.md)
 	if err := proto.Unmarshal(m.msg.Data, dynMsg); err != nil {
-		return fmt.Errorf("unmarshal dynamic message %s: %w", fullName, err)
+		return fmt.Errorf("unmarshal dynamic message %s: %w", mapping.fullName, err)
 	}
 
-	schemaID, err := s.ensureSchema(m.topic, fullName, schemaBytes)
+	topic := common.SubjectToTopic(m.subject)
+	schemaID, err := s.ensureSchema(topic, mapping.fullName, schema.schemaBytes)
 	if err != nil {
-		return fmt.Errorf("ensure schema for %s: %w", m.topic, err)
+		return fmt.Errorf("ensure schema for %s: %w", topic, err)
 	}
 
-	channelID, err := s.ensureChannel(m.topic, schemaID)
+	channelID, err := s.ensureChannel(topic, schemaID)
 	if err != nil {
-		return fmt.Errorf("ensure channel for %s: %w", m.topic, err)
+		return fmt.Errorf("ensure channel for %s: %w", topic, err)
 	}
 
 	if err := s.w.WriteMessage(&mcap.Message{
@@ -197,20 +265,12 @@ func (s *writeState) writeMessage(m *natsMsg, sequence uint32, logTime uint64) e
 	return nil
 }
 
-func (s *writeState) resolveProtoPath(topic string) (string, protoreflect.FullName, error) {
-	subject := common.TopicToSubject(topic)
-	entry, err := s.subjectsKV.Get(subject)
-	if err != nil {
-		return "", "", err
-	}
-	var mapping common.SubjectMapping
-	if err := json.Unmarshal(entry.Value(), &mapping); err != nil {
-		return "", "", fmt.Errorf("unmarshal subject mapping for %s: %w", subject, err)
-	}
-	return mapping.Schema.Path, protoreflect.FullName(mapping.Schema.FullName), nil
-}
-
 func (s *writeState) resolveSchema(protoPath string, fullName protoreflect.FullName) ([]byte, protoreflect.MessageDescriptor, error) {
+	schemaKey := string(fullName)
+	if schema, ok := s.schemas[schemaKey]; ok {
+		return schema.schemaBytes, schema.md, nil
+	}
+
 	fdSet, err := s.collectFileDescriptorSet(protoPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("collect file descriptor set: %w", err)
@@ -235,6 +295,7 @@ func (s *writeState) resolveSchema(protoPath string, fullName protoreflect.FullN
 		return nil, nil, fmt.Errorf("descriptor %s is not a message", fullName)
 	}
 
+	s.schemas[schemaKey] = &schema{schemaBytes: schemaBytes, md: md}
 	return schemaBytes, md, nil
 }
 

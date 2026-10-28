@@ -17,11 +17,12 @@ MCAP file.
     ```
   - serialized protobuf messages to NATS subjects derived from MCAP topics by
     replacing `/` with `.` (e.g., `/sensor/dummy` → `sensor.dummy`).
-- `receiver` subscribes to fixed NATS subjects, looks up the proto path and
-  message full name from `TOPICS`, fetches the individual
-  `FileDescriptorProto` entries from `SCHEMAS`, recursively resolves
-  dependencies to reconstruct a `FileDescriptorSet`, builds a dynamic
-  descriptor, parses each message, and writes it to `output.mcap`.
+- `receiver` resolves each target subject's schema mapping from `SUBJECTS`
+  before subscribing, fetches the individual `FileDescriptorProto` entries
+  from `SCHEMAS`, recursively resolves dependencies to reconstruct a
+  `FileDescriptorSet`, builds a dynamic descriptor, and caches the mapping
+  and schema. When messages arrive, it parses each message with the cached
+  descriptor and writes it to `output.mcap`.
 
 ## Run
 
