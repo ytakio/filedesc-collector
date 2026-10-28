@@ -21,10 +21,25 @@ const (
 	// SchemaBucket is the KV bucket name that stores FileDescriptorSet bytes
 	// keyed by proto file path.
 	SchemaBucket = "SCHEMAS"
-	// SubjectBucket is the KV bucket name that stores the proto file path
-	// keyed by NATS subject name.
+	// SubjectBucket is the KV bucket name that stores schema metadata keyed by
+	// NATS subject name.
 	SubjectBucket = "SUBJECTS"
 )
+
+// SchemaRef identifies the protobuf schema used by messages published on a
+// NATS subject.
+type SchemaRef struct {
+	// Path is the proto file path (FileDescriptorProto.name).
+	Path string `json:"path"`
+	// FullName is the fully-qualified descriptor name (DescriptorProto.full_name).
+	FullName string `json:"full_name"`
+}
+
+// SubjectMapping is the value stored in the SUBJECTS KV bucket for each NATS
+// subject.
+type SubjectMapping struct {
+	Schema SchemaRef `json:"schema"`
+}
 
 // ChannelConfig describes one channel produced/consumed by the example.
 type ChannelConfig struct {
@@ -58,6 +73,11 @@ func GetOrCreateKV(js nats.JetStreamContext, bucket string) (nats.KeyValue, erro
 		if apiErr := jsErr.APIError(); apiErr != nil && apiErr.ErrorCode == nats.JSErrCodeStreamNameInUse {
 			return js.KeyValue(bucket)
 		}
+	}
+
+	var apiErr *nats.APIError
+	if errors.As(err, &apiErr) && apiErr.ErrorCode == nats.JSErrCodeStreamNameInUse {
+		return js.KeyValue(bucket)
 	}
 	return nil, fmt.Errorf("kv bucket %s: %w", bucket, err)
 }

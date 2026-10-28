@@ -3,6 +3,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -75,11 +76,20 @@ func run() error {
 
 		subject := common.TopicToSubject(cfg.Topic)
 		msgName := string(descriptor.Descriptor().FullName())
-		subjectValue := fmt.Sprintf("%s|%s", protoPath, msgName)
-		if _, err := subjectsKV.Put(subject, []byte(subjectValue)); err != nil {
-			return fmt.Errorf("put subject mapping %s -> %s: %w", subject, subjectValue, err)
+		mapping := common.SubjectMapping{
+			Schema: common.SchemaRef{
+				Path:     protoPath,
+				FullName: msgName,
+			},
 		}
-		fmt.Printf("published subject mapping %s -> %s\n", subject, subjectValue)
+		mappingBytes, err := json.Marshal(mapping)
+		if err != nil {
+			return fmt.Errorf("marshal subject mapping for %s: %w", subject, err)
+		}
+		if _, err := subjectsKV.Put(subject, mappingBytes); err != nil {
+			return fmt.Errorf("put subject mapping %s -> %s: %w", subject, mappingBytes, err)
+		}
+		fmt.Printf("published subject mapping %s -> %s\n", subject, mappingBytes)
 	}
 
 	// Publish serialized protobuf messages at a fixed rate.

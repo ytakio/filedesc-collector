@@ -5,10 +5,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/foxglove/mcap/go/mcap"
@@ -203,11 +203,11 @@ func (s *writeState) resolveProtoPath(topic string) (string, protoreflect.FullNa
 	if err != nil {
 		return "", "", err
 	}
-	parts := strings.SplitN(string(entry.Value()), "|", 2)
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid subject value: %s", entry.Value())
+	var mapping common.SubjectMapping
+	if err := json.Unmarshal(entry.Value(), &mapping); err != nil {
+		return "", "", fmt.Errorf("unmarshal subject mapping for %s: %w", subject, err)
 	}
-	return parts[0], protoreflect.FullName(parts[1]), nil
+	return mapping.Schema.Path, protoreflect.FullName(mapping.Schema.FullName), nil
 }
 
 func (s *writeState) resolveSchema(protoPath string, fullName protoreflect.FullName) ([]byte, protoreflect.MessageDescriptor, error) {

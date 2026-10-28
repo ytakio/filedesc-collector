@@ -10,8 +10,11 @@ MCAP file.
 - `sender` publishes:
   - individual `FileDescriptorProto` messages to the `SCHEMAS` KV bucket,
     keyed by proto file path (e.g., `foxglove/SceneUpdate.proto`).
-  - a `proto_path|message_full_name` value to the `SUBJECTS` KV bucket keyed
-    by NATS subject name (e.g., `sensor.dummy`).
+  - a JSON value to the `SUBJECTS` KV bucket keyed by NATS subject name
+    (e.g., `sensor.dummy`). The JSON has the form:
+    ```json
+    {"schema": {"path": "foxglove/SceneUpdate.proto", "full_name": "foxglove.SceneUpdate"}}
+    ```
   - serialized protobuf messages to NATS subjects derived from MCAP topics by
     replacing `/` with `.` (e.g., `/sensor/dummy` → `sensor.dummy`).
 - `receiver` subscribes to fixed NATS subjects, looks up the proto path and
