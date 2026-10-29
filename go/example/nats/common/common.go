@@ -3,9 +3,7 @@
 package common
 
 import (
-	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -35,65 +33,36 @@ type SchemaRef struct {
 	FullName string `json:"full_name"`
 }
 
-// SubjectMapping is the value stored in the SUBJECTS KV bucket for each NATS
-// subject.
-type SubjectMapping struct {
+// SubjectInfo holds metadata for a NATS subject, including the schema used by
+// messages published on that subject.
+type SubjectInfo struct {
 	Schema SchemaRef `json:"schema"`
 }
 
 // ChannelConfig describes one channel produced/consumed by the example.
 type ChannelConfig struct {
-	Topic     string
-	SchemaMsg proto.Message
-	Populate  func(t time.Time, i int) proto.Message
-}
-
-// TopicToSubject converts an MCAP-style topic ("/sensor/dummy") into a NATS
-// subject ("sensor.dummy"). A leading slash is stripped because NATS
-// subjects cannot begin with a dot.
-func TopicToSubject(topic string) string {
-	return strings.ReplaceAll(strings.TrimPrefix(topic, "/"), "/", ".")
-}
-
-// SubjectToTopic converts a NATS subject ("sensor.dummy") into an MCAP-style
-// topic ("/sensor/dummy").
-func SubjectToTopic(subject string) string {
-	return "/" + strings.ReplaceAll(subject, ".", "/")
-}
-
-// ProtoPath returns the proto file path for a message type.
-func ProtoPath(msg proto.Message) string {
-	return string(msg.ProtoReflect().Descriptor().ParentFile().Path())
+	Subject string
+	// MessageType is the prototype used to obtain the protobuf descriptor for
+	// this channel. It holds a typed nil pointer such as (*T)(nil).
+	MessageType proto.Message
+	Populate    func(t time.Time, i int) proto.Message
 }
 
 // GetOrCreateKV opens an existing KV bucket or creates it when it does not
 // exist yet.
 func GetOrCreateKV(js nats.JetStreamContext, bucket string) (nats.KeyValue, error) {
-	kv, err := js.CreateKeyValue(&nats.KeyValueConfig{Bucket: bucket})
-	if err == nil {
+	if kv, err := js.KeyValue(bucket); err == nil {
 		return kv, nil
 	}
-
-	var jsErr nats.JetStreamError
-	if errors.As(err, &jsErr) {
-		if apiErr := jsErr.APIError(); apiErr != nil && apiErr.ErrorCode == nats.JSErrCodeStreamNameInUse {
-			return js.KeyValue(bucket)
-		}
-	}
-
-	var apiErr *nats.APIError
-	if errors.As(err, &apiErr) && apiErr.ErrorCode == nats.JSErrCodeStreamNameInUse {
-		return js.KeyValue(bucket)
-	}
-	return nil, fmt.Errorf("kv bucket %s: %w", bucket, err)
+	return js.CreateKeyValue(&nats.KeyValueConfig{Bucket: bucket})
 }
 
 // ChannelConfigs is the table of channels used by both sender and receiver.
 // It mirrors the mcapwriter example so the outputs can be compared.
 var ChannelConfigs = []ChannelConfig{
 	{
-		Topic:     "/timestamp",
-		SchemaMsg: (*timestamppb.Timestamp)(nil),
+		Subject:     "timestamp",
+		MessageType: (*timestamppb.Timestamp)(nil),
 		Populate: func(t time.Time, i int) proto.Message {
 			return &timestamppb.Timestamp{
 				Seconds: t.Unix(),
@@ -102,8 +71,8 @@ var ChannelConfigs = []ChannelConfig{
 		},
 	},
 	{
-		Topic:     "/sensor/dummy",
-		SchemaMsg: (*foxglove.SceneUpdate)(nil),
+		Subject:     "sensor.dummy",
+		MessageType: (*foxglove.SceneUpdate)(nil),
 		Populate: func(t time.Time, i int) proto.Message {
 			return &foxglove.SceneUpdate{
 				Entities: []*foxglove.SceneEntity{

@@ -54,42 +54,41 @@ func run() error {
 	// Publish each channel's schema and subject-to-proto-path mapping first so
 	// the receiver can resolve schemas before any data arrives.
 	for _, cfg := range common.ChannelConfigs {
-		descriptor := cfg.SchemaMsg.ProtoReflect()
+		subject := cfg.Subject
+		md := cfg.MessageType.ProtoReflect().Descriptor()
 		collector := filedesc.NewCollector()
-		fdProtos, err := collector.CollectForMessage(descriptor)
+		fdProtos, err := collector.CollectForMessage(cfg.MessageType.ProtoReflect())
 		if err != nil {
-			return fmt.Errorf("collect file descriptors for %s: %w", cfg.Topic, err)
+			return fmt.Errorf("collect file descriptors for %s: %w", subject, err)
 		}
 
-		protoPath := common.ProtoPath(cfg.SchemaMsg)
+		protoPath := string(md.ParentFile().Path())
 		for _, fdProto := range fdProtos {
 			path := fdProto.GetName()
 			data, err := proto.Marshal(fdProto)
 			if err != nil {
-				return fmt.Errorf("marshal file descriptor %s for %s: %w", path, cfg.Topic, err)
+				return fmt.Errorf("marshal file descriptor %s for %s: %w", path, subject, err)
 			}
 			if _, err := schemasKV.Put(path, data); err != nil {
-				return fmt.Errorf("put file descriptor %s for %s: %w", path, cfg.Topic, err)
+				return fmt.Errorf("put file descriptor %s for %s: %w", path, subject, err)
 			}
-			fmt.Printf("published file descriptor %s -> %s (%d bytes)\n", cfg.Topic, path, len(data))
+			fmt.Printf("published schema %s -> %s (%d bytes)\n", subject, path, len(data))
 		}
 
-		subject := common.TopicToSubject(cfg.Topic)
-		msgName := string(descriptor.Descriptor().FullName())
-		mapping := common.SubjectMapping{
+		info := common.SubjectInfo{
 			Schema: common.SchemaRef{
 				Path:     protoPath,
-				FullName: msgName,
+				FullName: string(md.FullName()),
 			},
 		}
-		mappingBytes, err := json.Marshal(mapping)
+		infoBytes, err := json.Marshal(info)
 		if err != nil {
-			return fmt.Errorf("marshal subject mapping for %s: %w", subject, err)
+			return fmt.Errorf("marshal subject info for %s: %w", subject, err)
 		}
-		if _, err := subjectsKV.Put(subject, mappingBytes); err != nil {
-			return fmt.Errorf("put subject mapping %s -> %s: %w", subject, mappingBytes, err)
+		if _, err := subjectsKV.Put(subject, infoBytes); err != nil {
+			return fmt.Errorf("put subject info %s -> %s: %w", subject, infoBytes, err)
 		}
-		fmt.Printf("published subject mapping %s -> %s\n", subject, mappingBytes)
+		fmt.Printf("published subject info %s -> %s\n", subject, infoBytes)
 	}
 
 	// Publish serialized protobuf messages at a fixed rate.
@@ -100,16 +99,13 @@ func run() error {
 			msg := cfg.Populate(t, i)
 			data, err := proto.Marshal(msg)
 			if err != nil {
-				return fmt.Errorf("marshal message for %s: %w", cfg.Topic, err)
+				return fmt.Errorf("marshal message for %s: %w", cfg.Subject, err)
 			}
-			subject := common.TopicToSubject(cfg.Topic)
-			if err := nc.Publish(subject, data); err != nil {
-				return fmt.Errorf("publish to %s: %w", subject, err)
+			if err := nc.Publish(cfg.Subject, data); err != nil {
+				return fmt.Errorf("publish to %s: %w", cfg.Subject, err)
 			}
 		}
 		time.Sleep(publishInterval)
 	}
-
-	fmt.Printf("published %d messages on each of %d channels\n", messageCount, len(common.ChannelConfigs))
 	return nil
 }

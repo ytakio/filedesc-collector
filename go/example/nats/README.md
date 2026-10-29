@@ -1,8 +1,7 @@
 # Go NATS filedesc-collector example
 
 This example demonstrates distributing protobuf schemas via NATS KV and
-parsing received messages with dynamic descriptors before writing them to an
-MCAP file.
+writing received raw protobuf messages to an MCAP file.
 
 ## Architecture
 
@@ -12,17 +11,23 @@ MCAP file.
     keyed by proto file path (e.g., `foxglove/SceneUpdate.proto`).
   - a JSON value to the `SUBJECTS` KV bucket keyed by NATS subject name
     (e.g., `sensor.dummy`). The JSON has the form:
+
     ```json
-    {"schema": {"path": "foxglove/SceneUpdate.proto", "full_name": "foxglove.SceneUpdate"}}
+    {
+      "schema": {
+        "path": "foxglove/SceneUpdate.proto",
+        "full_name": "foxglove.SceneUpdate"
+      }
+    }
     ```
-  - serialized protobuf messages to NATS subjects derived from MCAP topics by
-    replacing `/` with `.` (e.g., `/sensor/dummy` → `sensor.dummy`).
-- `receiver` resolves each target subject's schema mapping from `SUBJECTS`
-  before subscribing, fetches the individual `FileDescriptorProto` entries
-  from `SCHEMAS`, recursively resolves dependencies to reconstruct a
-  `FileDescriptorSet`, builds a dynamic descriptor, and caches the mapping
-  and schema. When messages arrive, it parses each message with the cached
-  descriptor and writes it to `output.mcap`.
+
+  - serialized protobuf messages to NATS subjects (e.g., `sensor.dummy`).
+- `receiver` starts first and uses NATS KV watchers to wait for each
+  subject's info entry in `SUBJECTS`. For every subject it resolves the
+  `FileDescriptorProto` chain from `SCHEMAS` (including transitive
+  dependencies), registers the corresponding MCAP schema and channel, and
+  subscribes to the subject. Received raw protobuf messages are written to
+  `output.mcap`.
 
 ## Run
 
@@ -36,7 +41,7 @@ Or step by step:
 
 ```bash
 make up        # start NATS
-make receiver  # run receiver in one terminal
+make receiver  # run receiver in one terminal (waits for schemas via KV watch)
 make sender    # run sender in another terminal
 make down      # stop NATS
 ```
@@ -58,4 +63,3 @@ The receiver writes `go/example/nats/output.mcap`.
 ```bash
 make clean
 ```
-
